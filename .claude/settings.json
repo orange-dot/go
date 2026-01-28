@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go test:*)",
+      "Bash(go build:*)",
+      "Bash(go install:*)",
+      "Bash(go generate:*)",
+      "Bash(go vet:*)",
+      "Bash(go fmt:*)",
+      "Bash(go run:*)",
+      "Bash(go tool:*)",
+      "Bash(go env:*)",
+      "Bash(go list:*)",
+      "Bash(go mod:*)",
+      "Bash(go version:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git codereview:*)"
+    ]
+  },
+  "env": {
+    "GOROOT_BOOTSTRAP": "",
+    "GOSSAFUNC": ""
+  },
+  "context": {
+    "notes": [
+      "This is the official Go repository (compiler, runtime, standard library)",
+      "Build with make.bat (Windows) or ./make.bash (Unix/WSL) from src/",
+      "Use 'go install cmd/compile' after compiler changes",
+      "Run 'go generate cmd/compile/internal/ssa' after modifying SSA rules",
+      "Tests: 'go test <pkg>', 'go test cmd/internal/testdir' for compiler tests",
+      "Code review via Gerrit - use git-codereview tool"
+    ]
+  }
+}
