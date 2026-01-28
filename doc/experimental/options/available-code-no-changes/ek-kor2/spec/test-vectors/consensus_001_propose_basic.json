@@ -1,0 +1,39 @@
+{
+  "id": "consensus_001",
+  "name": "consensus_propose_basic",
+  "module": "consensus",
+  "function": "consensus_propose",
+  "description": "Create a new proposal",
+
+  "setup": {
+    "init": {
+      "my_id": 1
+    }
+  },
+
+  "input": {
+    "proposal_type": "ModeChange",
+    "data": 42,
+    "threshold": 0.67,
+    "now": 1000000
+  },
+
+  "expected": {
+    "return": "OK",
+    "ballot_id": 1,
+    "ballot_state": {
+      "proposer": 1,
+      "proposal_type": "ModeChange",
+      "data": 42,
+      "threshold_fixed": 43909,
+      "deadline": 1050000,
+      "result": "Pending"
+    }
+  },
+
+  "notes": [
+    "First ballot gets ID 1",
+    "Threshold 0.67 = 43909 (0xAB85) in Q16.16",
+    "Deadline = now + VOTE_TIMEOUT_US = 1000000 + 50000"
+  ]
+}

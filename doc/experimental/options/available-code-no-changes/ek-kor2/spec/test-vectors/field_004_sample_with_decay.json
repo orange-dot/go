@@ -1,0 +1,40 @@
+{
+  "id": "field_004",
+  "name": "field_sample_with_decay",
+  "module": "field",
+  "function": "field_sample",
+  "description": "Sample field with decay applied (elapsed = tau)",
+
+  "setup": {
+    "publish": {
+      "module_id": 42,
+      "field": {
+        "load": 1.0,
+        "thermal": 1.0,
+        "power": 1.0
+      },
+      "timestamp": 1000000
+    }
+  },
+
+  "input": {
+    "target_id": 42,
+    "now": 1100000
+  },
+
+  "expected": {
+    "return": "OK",
+    "field": {
+      "load": {"approx": 0.368, "tolerance": 0.05},
+      "thermal": {"approx": 0.368, "tolerance": 0.05},
+      "power": {"approx": 0.368, "tolerance": 0.05}
+    }
+  },
+
+  "notes": [
+    "Elapsed = 100000us = 100ms = tau",
+    "Decay factor = exp(-1) ≈ 0.368",
+    "Original value 1.0 * 0.368 = 0.368",
+    "Tolerance allows for fixed-point approximation errors"
+  ]
+}

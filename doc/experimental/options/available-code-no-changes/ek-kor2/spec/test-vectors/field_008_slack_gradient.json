@@ -1,0 +1,28 @@
+{
+  "id": "field_008",
+  "name": "field_slack_gradient",
+  "module": "field",
+  "function": "field_gradient",
+  "description": "Compute slack gradient when neighbors have tighter deadlines",
+
+  "input": {
+    "my_field": {
+      "slack": 0.8
+    },
+    "neighbor_aggregate": {
+      "slack": 0.3
+    },
+    "component": "Slack"
+  },
+
+  "expected": {
+    "gradient": -0.5
+  },
+
+  "notes": [
+    "Gradient = neighbor - self = 0.3 - 0.8 = -0.5",
+    "Negative gradient means neighbors have less slack (tighter deadlines)",
+    "This module should consider taking work from neighbors",
+    "MAPF-HET integration: modules with tight deadlines publish low slack values"
+  ]
+}

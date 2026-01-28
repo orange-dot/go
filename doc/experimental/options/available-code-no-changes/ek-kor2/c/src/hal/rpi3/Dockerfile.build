@@ -1,0 +1,11 @@
+# Dockerfile for building EK-KOR v2 RPi3 HAL
+FROM ubuntu:22.04
+
+# Install build tools
+RUN apt-get update && apt-get install -y \
+    gcc-aarch64-linux-gnu \
+    cmake \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build

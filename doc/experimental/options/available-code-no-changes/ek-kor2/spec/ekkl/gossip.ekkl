@@ -1,0 +1,289 @@
+// EK-KOR v2 Gossip Protocol - EKKL Formal Specification
+//
+// Copyright (c) 2026 Elektrokombinacija
+// License: MIT
+//
+// This specification defines the gossip protocol for federated event sourcing.
+
+// ============================================================================
+// VERSION VECTOR
+// ============================================================================
+
+/// Version vector entry
+struct VVEntry {
+    module_id: u8,
+    sequence: u32,
+}
+
+/// Version vector for causal ordering
+struct VersionVector {
+    entries: VVEntry[8],
+    count: u8,
+}
+
+/// Version vector comparison result
+enum VVOrder {
+    Equal,      // Identical vectors
+    Before,     // Self happened-before other
+    After,      // Other happened-before self
+    Concurrent, // Neither dominates
+}
+
+/// Get sequence for module from version vector
+fn vv_get(vv: &VersionVector, module_id: u8) -> u32 {
+    for i in 0..vv.count {
+        if vv.entries[i].module_id == module_id {
+            return vv.entries[i].sequence;
+        }
+    }
+    return 0;
+}
+
+/// Set sequence for module in version vector
+fn vv_set(vv: &mut VersionVector, module_id: u8, seq: u32) -> Result<()> {
+    // Find existing
+    for i in 0..vv.count {
+        if vv.entries[i].module_id == module_id {
+            vv.entries[i].sequence = seq;
+            return Ok(());
+        }
+    }
+    // Add new
+    require!(vv.count < 8, "VV full");
+    vv.entries[vv.count] = VVEntry { module_id, sequence: seq };
+    vv.count += 1;
+    Ok(())
+}
+
+/// Compare two version vectors
+fn vv_compare(a: &VersionVector, b: &VersionVector) -> VVOrder {
+    let mut a_dominates = true;
+    let mut b_dominates = true;
+
+    // Check a's entries
+    for i in 0..a.count {
+        let a_seq = a.entries[i].sequence;
+        let b_seq = vv_get(b, a.entries[i].module_id);
+        if a_seq < b_seq { a_dominates = false; }
+        if a_seq > b_seq { b_dominates = false; }
+    }
+
+    // Check b's entries
+    for i in 0..b.count {
+        let b_seq = b.entries[i].sequence;
+        let a_seq = vv_get(a, b.entries[i].module_id);
+        if a_seq < b_seq { a_dominates = false; }
+        if a_seq > b_seq { b_dominates = false; }
+    }
+
+    match (a_dominates, b_dominates) {
+        (true, true) => VVOrder::Equal,
+        (true, false) => VVOrder::After,
+        (false, true) => VVOrder::Before,
+        (false, false) => VVOrder::Concurrent,
+    }
+}
+
+/// Merge remote VV into local (element-wise max)
+fn vv_merge(local: &mut VersionVector, remote: &VersionVector) {
+    for i in 0..remote.count {
+        let mod_id = remote.entries[i].module_id;
+        let remote_seq = remote.entries[i].sequence;
+        let local_seq = vv_get(local, mod_id);
+        if remote_seq > local_seq {
+            vv_set(local, mod_id, remote_seq);
+        }
+    }
+}
+
+// ============================================================================
+// LWW TIMESTAMP
+// ============================================================================
+
+/// Last-Writer-Wins timestamp for conflict resolution
+struct LWWTimestamp {
+    timestamp_us: u32,
+    origin_id: u8,
+}
+
+/// Check if a is newer than b
+fn lww_is_newer(a: LWWTimestamp, b: LWWTimestamp) -> bool {
+    if a.timestamp_us != b.timestamp_us {
+        return a.timestamp_us > b.timestamp_us;
+    }
+    // Tiebreaker: higher origin_id wins
+    return a.origin_id > b.origin_id;
+}
+
+// ============================================================================
+// EVENT V2
+// ============================================================================
+
+/// Extended event format for gossip
+struct EventV2 {
+    sequence: u32,
+    timestamp_us: u32,
+    event_type: u8,
+    flags: u8,
+    origin_id: u8,
+    hop_count: u8,
+    origin_seq: u32,
+    payload: u8[20],
+}
+
+// Event types
+const EVENT_STATE_TRANSITION: u8 = 0x01;
+const EVENT_FIELD_PUBLISHED: u8 = 0x02;
+const EVENT_NEIGHBOR_JOINED: u8 = 0x03;
+const EVENT_NEIGHBOR_LEFT: u8 = 0x04;
+
+// ============================================================================
+// GOSSIP PROTOCOL
+// ============================================================================
+
+/// Gossip configuration
+const GOSSIP_MAX_HOPS: u8 = 3;
+const GOSSIP_TICK_US: u64 = 10000;
+const GOSSIP_BATCH_SIZE: usize = 2;
+
+/// Message types
+const MSG_EVENT_GOSSIP: u8 = 0x60;
+const MSG_EVENT_ACK: u8 = 0x61;
+const MSG_EVENT_REQUEST: u8 = 0x62;
+
+/// Gossip context
+struct GossipContext {
+    my_id: u8,
+    vv: VersionVector,
+    local_sequence: u32,
+    neighbor_count: u8,
+}
+
+/// Handle received event
+fn gossip_handle_event(
+    ctx: &mut GossipContext,
+    event: &EventV2,
+    sender: u8
+) -> Result<()> {
+    // Check for duplicate
+    let known_seq = vv_get(&ctx.vv, event.origin_id);
+    if event.origin_seq <= known_seq {
+        return Err("duplicate");
+    }
+
+    // Check for gap
+    if event.origin_seq > known_seq + 1 {
+        // Buffer and request missing
+        return Err("gap_detected");
+    }
+
+    // Check hop limit
+    if event.hop_count >= GOSSIP_MAX_HOPS {
+        // Store but don't forward
+    }
+
+    // Update VV
+    vv_set(&mut ctx.vv, event.origin_id, event.origin_seq);
+
+    // Forward to neighbors (except sender)
+    if event.hop_count < GOSSIP_MAX_HOPS {
+        // forward_to_neighbors(event, sender);
+    }
+
+    Ok(())
+}
+
+// ============================================================================
+// TEST ASSERTIONS
+// ============================================================================
+
+#[test]
+fn test_vv_basic() {
+    let mut vv = VersionVector::default();
+
+    assert_eq!(vv_get(&vv, 1), 0);
+
+    vv_set(&mut vv, 1, 5).unwrap();
+    assert_eq!(vv_get(&vv, 1), 5);
+
+    vv_set(&mut vv, 2, 3).unwrap();
+    assert_eq!(vv_get(&vv, 2), 3);
+}
+
+#[test]
+fn test_vv_compare() {
+    let mut a = VersionVector::default();
+    let mut b = VersionVector::default();
+
+    // Both empty - equal
+    assert_eq!(vv_compare(&a, &b), VVOrder::Equal);
+
+    // a > b
+    vv_set(&mut a, 1, 5).unwrap();
+    vv_set(&mut b, 1, 3).unwrap();
+    assert_eq!(vv_compare(&a, &b), VVOrder::After);
+
+    // b > a
+    vv_set(&mut b, 1, 7).unwrap();
+    assert_eq!(vv_compare(&a, &b), VVOrder::Before);
+
+    // Concurrent
+    vv_set(&mut a, 2, 10).unwrap();
+    vv_set(&mut b, 3, 10).unwrap();
+    assert_eq!(vv_compare(&a, &b), VVOrder::Concurrent);
+}
+
+#[test]
+fn test_lww_newer() {
+    let a = LWWTimestamp { timestamp_us: 1000, origin_id: 1 };
+    let b = LWWTimestamp { timestamp_us: 2000, origin_id: 1 };
+
+    assert!(!lww_is_newer(a, b));
+    assert!(lww_is_newer(b, a));
+
+    // Same timestamp, tiebreaker
+    let c = LWWTimestamp { timestamp_us: 1000, origin_id: 5 };
+    assert!(lww_is_newer(c, a)); // higher origin_id wins
+}
+
+#[test]
+fn test_gossip_duplicate() {
+    let mut ctx = GossipContext {
+        my_id: 2,
+        vv: VersionVector::default(),
+        local_sequence: 1,
+        neighbor_count: 1,
+    };
+
+    vv_set(&mut ctx.vv, 1, 5).unwrap();
+
+    // Event with seq <= known is duplicate
+    let event = EventV2 {
+        origin_id: 1,
+        origin_seq: 5,
+        ..Default::default()
+    };
+
+    assert!(gossip_handle_event(&mut ctx, &event, 1).is_err());
+}
+
+#[test]
+fn test_gossip_gap() {
+    let mut ctx = GossipContext {
+        my_id: 2,
+        vv: VersionVector::default(),
+        local_sequence: 1,
+        neighbor_count: 1,
+    };
+
+    vv_set(&mut ctx.vv, 1, 3).unwrap();
+
+    // Event with seq > known + 1 is gap
+    let event = EventV2 {
+        origin_id: 1,
+        origin_seq: 7,  // Gap: missing 4,5,6
+        ..Default::default()
+    };
+
+    assert!(gossip_handle_event(&mut ctx, &event, 1).is_err());
+}

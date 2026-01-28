@@ -1,0 +1,19 @@
+{
+  "_meta": {
+    "vector_file": "consensus_002_vote_approved.json",
+    "captured_from": "rust",
+    "captured_at": "2026-01-21T02:32:58.142000Z",
+    "test_id": "consensus_002",
+    "test_name": "consensus_vote_approved",
+    "module": "consensus"
+  },
+  "expected": {},
+  "actual": {
+    "id": "consensus_002_vote_approved",
+    "module": "harness",
+    "function": "load",
+    "passed": false,
+    "error": "Failed to load test file: Failed to parse D:\\work\\autobusi-punjaci\\ek-kor2\\spec\\test-vectors\\consensus_002_vote_approved.json: missing field `input` at line 57 column 1"
+  },
+  "passed": false
+}

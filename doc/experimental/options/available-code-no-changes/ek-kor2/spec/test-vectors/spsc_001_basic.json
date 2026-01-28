@@ -1,0 +1,125 @@
+{
+  "name": "SPSC Ring Buffer Basic Tests",
+  "description": "Test SPSC ring buffer push, pop, and state queries",
+  "tests": [
+    {
+      "id": "spsc_init",
+      "function": "ekk_spsc_init",
+      "input": {
+        "capacity": 8,
+        "item_size": 16
+      },
+      "expected": {
+        "result": "EKK_OK",
+        "head": 0,
+        "tail": 0,
+        "mask": 7
+      }
+    },
+    {
+      "id": "spsc_init_not_power_of_2",
+      "function": "ekk_spsc_init",
+      "input": {
+        "capacity": 7,
+        "item_size": 16
+      },
+      "expected": {
+        "result": "EKK_ERR_INVALID_ARG"
+      }
+    },
+    {
+      "id": "spsc_empty_initial",
+      "function": "ekk_spsc_is_empty",
+      "precondition": "ekk_spsc_init(q, buf, 8, 16)",
+      "expected": {
+        "result": true
+      }
+    },
+    {
+      "id": "spsc_push_one",
+      "function": "ekk_spsc_push",
+      "precondition": "ekk_spsc_init(q, buf, 8, 16)",
+      "input": {
+        "item": "0x01020304050607080910111213141516"
+      },
+      "expected": {
+        "result": "EKK_OK",
+        "len": 1,
+        "is_empty": false
+      }
+    },
+    {
+      "id": "spsc_pop_one",
+      "function": "ekk_spsc_pop",
+      "precondition": "push one item",
+      "expected": {
+        "result": "EKK_OK",
+        "item": "0x01020304050607080910111213141516",
+        "len": 0,
+        "is_empty": true
+      }
+    },
+    {
+      "id": "spsc_pop_empty",
+      "function": "ekk_spsc_pop",
+      "precondition": "ekk_spsc_init(q, buf, 8, 16)",
+      "expected": {
+        "result": "EKK_ERR_NOT_FOUND"
+      }
+    },
+    {
+      "id": "spsc_fill_to_capacity",
+      "function": "ekk_spsc_push",
+      "precondition": "ekk_spsc_init(q, buf, 8, 16)",
+      "input": {
+        "count": 7,
+        "comment": "Capacity 8 means max 7 items (one slot reserved)"
+      },
+      "expected": {
+        "result": "EKK_OK",
+        "len": 7,
+        "is_full": true
+      }
+    },
+    {
+      "id": "spsc_push_when_full",
+      "function": "ekk_spsc_push",
+      "precondition": "queue is full",
+      "expected": {
+        "result": "EKK_ERR_NO_MEMORY"
+      }
+    },
+    {
+      "id": "spsc_fifo_order",
+      "description": "Push A, B, C then pop should return A, B, C",
+      "function": "sequence",
+      "steps": [
+        {"op": "push", "item": "A"},
+        {"op": "push", "item": "B"},
+        {"op": "push", "item": "C"},
+        {"op": "pop", "expected": "A"},
+        {"op": "pop", "expected": "B"},
+        {"op": "pop", "expected": "C"}
+      ]
+    },
+    {
+      "id": "spsc_peek_no_consume",
+      "function": "ekk_spsc_pop_peek",
+      "precondition": "push one item",
+      "expected": {
+        "result": "pointer to item",
+        "len_after": 1,
+        "comment": "Peek returns item but does not remove it"
+      }
+    },
+    {
+      "id": "spsc_peek_release",
+      "function": "ekk_spsc_pop_release",
+      "precondition": "peek one item",
+      "expected": {
+        "len_after": 0,
+        "comment": "Release removes the peeked item"
+      }
+    }
+  ]
+}

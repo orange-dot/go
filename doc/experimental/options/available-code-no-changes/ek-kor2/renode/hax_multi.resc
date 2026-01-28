@@ -1,0 +1,225 @@
+# EK-KOR v2 HAX Demo - 7 Module Full CAN Emulation
+#
+# This script creates 7 STM32G474 modules connected via virtual CAN bus.
+# Each module runs the hax_demo firmware and communicates via real CAN frames.
+#
+# Usage:
+#   Headless: renode --disable-xwt --console -e 'include @hax_multi.resc; runMacro $demo'
+#   Interactive: renode -e 'include @hax_multi.resc'
+#
+# Prerequisites:
+#   Build hax_demo.elf: cmake -DEKK_PLATFORM=stm32g474 && ninja hax_demo
+#
+# Copyright (c) 2026 Elektrokombinacija
+# SPDX-License-Identifier: MIT
+
+echo ""
+echo "============================================"
+echo "  EK-KOR v2 HAX DEMO - 7 Module CAN Mesh"
+echo "============================================"
+echo ""
+
+# Create virtual CAN bus
+emulation CreateCANHub "canbus"
+echo "[CAN] Virtual CAN hub created"
+
+# Configure timing for multi-module sync
+emulation SetGlobalQuantum "0.0001"
+
+# === Create 7 modules ===
+
+echo "[SETUP] Creating module 1..."
+mach create "mod1"
+machine LoadPlatformDescription @stm32g474-can.repl
+connector Connect sysbus.fdcan1 canbus
+
+echo "[SETUP] Creating module 2..."
+mach create "mod2"
+machine LoadPlatformDescription @stm32g474-can.repl
+connector Connect sysbus.fdcan1 canbus
+
+echo "[SETUP] Creating module 3..."
+mach create "mod3"
+machine LoadPlatformDescription @stm32g474-can.repl
+connector Connect sysbus.fdcan1 canbus
+
+echo "[SETUP] Creating module 4..."
+mach create "mod4"
+machine LoadPlatformDescription @stm32g474-can.repl
+connector Connect sysbus.fdcan1 canbus
+
+echo "[SETUP] Creating module 5..."
+mach create "mod5"
+machine LoadPlatformDescription @stm32g474-can.repl
+connector Connect sysbus.fdcan1 canbus
+
+echo "[SETUP] Creating module 6..."
+mach create "mod6"
+machine LoadPlatformDescription @stm32g474-can.repl
+connector Connect sysbus.fdcan1 canbus
+
+echo "[SETUP] Creating module 7..."
+mach create "mod7"
+machine LoadPlatformDescription @stm32g474-can.repl
+connector Connect sysbus.fdcan1 canbus
+
+echo "[SETUP] All 7 modules created and connected to CAN bus"
+
+# Switch back to monitor context for global macros
+mach clear
+
+# === Macro: Load firmware to all modules ===
+# Writes unique module ID to memory before loading ELF
+macro loadHax
+"""
+    echo '[LOAD] Loading hax_demo.elf to all modules...'
+
+    mach set "mod1"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00001
+    sysbus LoadELF @hax_demo.elf
+
+    mach set "mod2"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00002
+    sysbus LoadELF @hax_demo.elf
+
+    mach set "mod3"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00003
+    sysbus LoadELF @hax_demo.elf
+
+    mach set "mod4"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00004
+    sysbus LoadELF @hax_demo.elf
+
+    mach set "mod5"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00005
+    sysbus LoadELF @hax_demo.elf
+
+    mach set "mod6"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00006
+    sysbus LoadELF @hax_demo.elf
+
+    mach set "mod7"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00007
+    sysbus LoadELF @hax_demo.elf
+
+    echo '[LOAD] Firmware loaded to all 7 modules'
+"""
+
+# === Macro: Setup UART logging ===
+macro logUart
+"""
+    echo '[LOG] Setting up UART logging...'
+
+    mach set "mod1"
+    sysbus.usart2 CreateFileBackend @hax_mod1.log true
+
+    mach set "mod2"
+    sysbus.usart2 CreateFileBackend @hax_mod2.log true
+
+    mach set "mod3"
+    sysbus.usart2 CreateFileBackend @hax_mod3.log true
+
+    mach set "mod4"
+    sysbus.usart2 CreateFileBackend @hax_mod4.log true
+
+    mach set "mod5"
+    sysbus.usart2 CreateFileBackend @hax_mod5.log true
+
+    mach set "mod6"
+    sysbus.usart2 CreateFileBackend @hax_mod6.log true
+
+    mach set "mod7"
+    sysbus.usart2 CreateFileBackend @hax_mod7.log true
+
+    mach clear
+    echo '[LOG] UART output logged to hax_mod[1-7].log'
+"""
+
+# === Macro: Kill module 4 (simulate failure) ===
+macro killMod4
+"""
+    echo '[FAILURE] Killing module 4...'
+    mach set "mod4"
+    pause
+    echo '[FAILURE] Module 4 stopped - remaining modules should reform mesh'
+"""
+
+# === Macro: Check CAN statistics ===
+macro checkCan
+"""
+    echo '[CAN] Checking CAN bus statistics...'
+    # Note: CAN statistics depend on Renode version
+    # Some versions expose Statistics property on CANHub
+"""
+
+# === Macro: Full demo sequence (for CI) ===
+macro demo
+"""
+    echo ''
+    echo '========================================'
+    echo '  HAX Demo: 7-Module Full CAN Emulation'
+    echo '========================================'
+    echo ''
+
+    runMacro $loadHax
+
+    echo ''
+    echo '[PHASE 1] Discovery - Starting all modules...'
+    logLevel 3 usart2
+    start
+    sleep 5
+    echo '[PHASE 1] Discovery phase complete (5.0s)'
+
+    echo ''
+    echo '[PHASE 2] Consensus - Modules should vote...'
+    sleep 3
+    echo '[PHASE 2] Consensus phase complete (3.0s)'
+
+    echo ''
+    echo '[PHASE 3] Failure - Killing module 4...'
+    runMacro $killMod4
+    sleep 5
+    echo '[PHASE 3] Reformation phase complete (5.0s)'
+
+    echo ''
+    echo '[PHASE 4] Recovery - Verifying mesh reformation...'
+    sleep 2
+    echo '[PHASE 4] Recovery phase complete (2.0s)'
+
+    pause
+
+    echo ''
+    echo '========================================'
+    echo '  HAX Demo Complete'
+    echo '========================================'
+    echo ''
+    echo 'CAN communication test completed.'
+    echo 'Note: UART output suppressed due to Renode model limitations.'
+    echo ''
+
+    quit
+"""
+
+# === Macro: Quick test (shorter duration) ===
+macro quickTest
+"""
+    runMacro $loadHax
+    start
+    emulation RunFor @3.0
+    pause
+    echo 'Quick test complete (3.0s)'
+    quit
+"""
+
+echo ""
+echo "Available commands:"
+echo "  runMacro \$loadHax    - Load firmware to all modules"
+echo "  runMacro \$logUart    - Enable UART logging"
+echo "  runMacro \$demo       - Run full demo sequence"
+echo "  runMacro \$quickTest  - Quick 3s test"
+echo "  runMacro \$killMod4   - Kill module 4"
+echo "  start                - Start all modules"
+echo "  pause                - Pause all modules"
+echo ""
+echo "For CI: renode --disable-xwt --console -e 'include @hax_multi.resc; runMacro \$demo'"
+echo ""

@@ -1,0 +1,36 @@
+{
+  "id": "topology_001",
+  "name": "topology_discovery_basic",
+  "module": "topology",
+  "function": "topology_on_discovery",
+  "description": "Process first discovery message",
+
+  "setup": {
+    "init": {
+      "my_id": 1,
+      "my_position": {"x": 0, "y": 0, "z": 0},
+      "metric": "Logical"
+    }
+  },
+
+  "input": {
+    "sender_id": 2,
+    "sender_position": {"x": 1, "y": 0, "z": 0},
+    "now": 1000000
+  },
+
+  "expected": {
+    "return": "OK",
+    "topology_changed": true,
+    "neighbor_count": 1,
+    "neighbors": [
+      {"id": 2, "logical_distance": 1}
+    ]
+  },
+
+  "notes": [
+    "First neighbor discovered",
+    "Logical distance = abs(1 - 2) = 1",
+    "topology_changed = true because neighbors list changed"
+  ]
+}

@@ -1,0 +1,133 @@
+// STM32G474 with Real CAN - Renode 1.14 Compatible
+// Minimal platform optimized for multi-module CAN testing
+//
+// This uses Renode's built-in STMCAN model instead of Python stubs,
+// enabling real CAN frame routing between modules via CANHub.
+//
+// HAL Compatibility:
+//   Our HAL (ekk_hal_stm32g474.c) uses bxCAN register layout which
+//   STMCAN implements. Key registers: MCR, MSR, TSR, BTR, TX mailboxes, RX FIFOs.
+//
+// Copyright (c) 2026 Elektrokombinacija
+// SPDX-License-Identifier: MIT
+
+// CPU Core - ARM Cortex-M4F @ 170MHz
+cpu: CPU.CortexM @ sysbus
+    cpuType: "cortex-m4f"
+    nvic: nvic
+
+// Nested Vectored Interrupt Controller (includes SysTick)
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    priorityMask: 0xF0
+    systickFrequency: 170000000
+    -> cpu@0
+
+// Memory Regions
+flash: Memory.MappedMemory @ sysbus 0x08000000
+    size: 0x80000
+
+sram1: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x14000
+
+sram2: Memory.MappedMemory @ sysbus 0x20014000
+    size: 0x4000
+
+ccmram: Memory.MappedMemory @ sysbus 0x10000000
+    size: 0x8000
+
+// USART2 - Debug console (PA2/PA3)
+usart2: UART.STM32F7_USART @ sysbus 0x40004400
+    frequency: 170000000
+    IRQ -> nvic@38
+
+// RCC - Clock control (minimal stub)
+rcc: Python.PythonPeripheral @ sysbus 0x40021000
+    size: 0x400
+    initable: true
+    script: '''
+if request.isInit:
+    regs = {}
+
+if request.isRead:
+    request.value = regs.get(request.offset, 0xFFFFFFFF)
+
+if request.isWrite:
+    regs[request.offset] = request.value
+'''
+
+// GPIO Port A (for UART/CAN pins)
+gpioa: Python.PythonPeripheral @ sysbus 0x48000000
+    size: 0x400
+    initable: true
+    script: '''
+if request.isInit:
+    regs = {}
+
+if request.isRead:
+    request.value = regs.get(request.offset, 0)
+
+if request.isWrite:
+    regs[request.offset] = request.value
+'''
+
+// TIM2 - 32-bit timer for microsecond timestamps (Python stub)
+tim2: Python.PythonPeripheral @ sysbus 0x40000000
+    size: 0x400
+    initable: true
+    script: '''
+if request.isInit:
+    cnt = 0
+    arr = 0xFFFFFFFF
+    psc = 0
+    cr1 = 0
+
+if request.isRead:
+    if request.offset == 0x24:  # CNT
+        import time
+        cnt = int(time.time() * 1000000) & 0xFFFFFFFF
+        request.value = cnt
+    elif request.offset == 0x2C:  # ARR
+        request.value = arr
+    elif request.offset == 0x28:  # PSC
+        request.value = psc
+    elif request.offset == 0x00:  # CR1
+        request.value = cr1
+    else:
+        request.value = 0
+
+if request.isWrite:
+    if request.offset == 0x2C:  # ARR
+        arr = request.value
+    elif request.offset == 0x28:  # PSC
+        psc = request.value
+    elif request.offset == 0x00:  # CR1
+        cr1 = request.value
+'''
+
+// Unique Device ID (96-bit) - Used for module ID fallback
+// Returns pseudo-random values based on machine name
+uid: Python.PythonPeripheral @ sysbus 0x1FFF7590
+    size: 0x10
+    initable: true
+    script: '''
+if request.isInit:
+    uid0 = 0x12345678
+    uid1 = 0x9ABCDEF0
+    uid2 = 0x11223344
+
+if request.isRead:
+    if request.offset == 0x00:
+        request.value = uid0
+    elif request.offset == 0x04:
+        request.value = uid1
+    elif request.offset == 0x08:
+        request.value = uid2
+    else:
+        request.value = 0
+'''
+
+// FDCAN1 - Real CAN using STMCAN model
+// STMCAN implements bxCAN registers which our HAL uses:
+//   MCR (0x00), MSR (0x04), TSR (0x08), RF0R (0x0C), BTR (0x1C)
+//   TX Mailboxes at 0x180, RX FIFO at 0x1B0
+fdcan1: CAN.STMCAN @ sysbus <0x40006400, +0x400>

@@ -1,0 +1,63 @@
+services:
+  eventstoredb:
+    image: eventstore/eventstore:24.2
+    container_name: finance-eventstoredb
+    environment:
+      - EVENTSTORE_CLUSTER_SIZE=1
+      - EVENTSTORE_RUN_PROJECTIONS=All
+      - EVENTSTORE_START_STANDARD_PROJECTIONS=true
+      - EVENTSTORE_INSECURE=true
+      - EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP=true
+    ports:
+      - "2113:2113"  # HTTP API + UI
+      - "1113:1113"  # TCP (gRPC)
+    volumes:
+      - eventstoredb-data:/var/lib/eventstore
+      - eventstoredb-logs:/var/log/eventstore
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2113/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - finance-network
+
+  backend:
+    build:
+      context: ./backend/FinancePlatform.Functions
+      dockerfile: Dockerfile
+    container_name: finance-backend
+    environment:
+      - AzureWebJobsStorage=UseDevelopmentStorage=true
+      - FUNCTIONS_WORKER_RUNTIME=dotnet-isolated
+      - EventStoreDB__ConnectionString=esdb://eventstoredb:2113?tls=false
+      - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+      - "7071:80"
+    depends_on:
+      eventstoredb:
+        condition: service_healthy
+    networks:
+      - finance-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: finance-frontend
+    environment:
+      - VITE_API_URL=http://localhost:7071/api
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - finance-network
+
+volumes:
+  eventstoredb-data:
+  eventstoredb-logs:
+
+networks:
+  finance-network:
+    driver: bridge

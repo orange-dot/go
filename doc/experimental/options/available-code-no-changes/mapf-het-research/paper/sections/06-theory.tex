@@ -1,0 +1,115 @@
+\section{Theoretical Analysis}
+\label{sec:theory}
+
+We establish completeness, optimality, and convergence properties for our algorithms.
+
+\subsection{MIXED-CBS Properties}
+
+\begin{theorem}[Completeness]
+\mixedcbs{} is complete: if a solution exists for MD-MAPF instance $\mathcal{I}$, the algorithm will find it.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+Dimensional decomposition does not eliminate valid solutions. Each resolution strategy in Section~\ref{sec:algorithms} generates constraints that cover all possible conflict resolutions for the given dimensional class. The constraint space is finite (bounded by the space-time graph), ensuring termination. By induction on search tree depth, every branch leads to either a valid solution or an infeasible constraint set. Since we enumerate all branches, completeness follows from CBS completeness~\cite{sharon2015cbs}.
+\end{proof}
+
+\begin{theorem}[Optimality]
+\mixedcbs{} returns a solution with minimal makespan.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+Best-first search by cost function (makespan) guarantees the first conflict-free node found has minimal cost. Dimensional decomposition affects only the branching strategy, not the cost function. Since all conflict resolutions are enumerated (no pruning of valid branches), optimality is preserved.
+\end{proof}
+
+\begin{theorem}[Complexity]
+The worst-case time complexity of \mixedcbs{} is $O(2^n \cdot |V|^2 \cdot T_{\max})$ where $n$ is agent count, $|V|$ is vertex count, and $T_{\max}$ is the time horizon.
+\end{theorem}
+
+This matches standard CBS complexity. The dimensional classification provides constant-factor improvements through reduced branching in specific conflict classes (e.g., LINEAR conflicts generate single constraints rather than pairs).
+
+\subsection{E-CBS Properties}
+
+\begin{theorem}[Energy Validity]
+If \ecbs{} returns a solution $\pi$, then $\pi$ is energy-valid for all agents.
+\end{theorem}
+
+\begin{proof}
+Energy validation precedes conflict detection in Algorithm~\ref{alg:ecbs}. A node enters the solution check only after passing energy simulation. The charging waypoint insertion ensures sufficient energy for path completion. Since paths are revalidated after each modification, the invariant is maintained.
+\end{proof}
+
+\begin{theorem}[E-CBS Completeness]
+\ecbs{} is complete when sufficient charging stations exist.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+Let $d_{\max}$ be the maximum distance between any vertex and its nearest charging station. If $E_{\max} > P_{\max} \cdot d_{\max} / v_{\min}$, any vertex is reachable from a charged state. The charging insertion mechanism adds at most $O(|T|)$ waypoints per agent, preserving finite search space.
+\end{proof}
+
+\subsection{Convergence of Field Coordination}
+
+\begin{theorem}[Gradient Convergence]
+Under the potential field scheduler, the system converges to a stable load distribution within $O(D \cdot \tau)$ time, where $D$ is the network diameter and $\tau$ is the field decay constant.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+The potential field defines a Lyapunov function:
+\begin{equation}
+V = \sum_{i} \Phi_{\text{load},i}^2
+\end{equation}
+Gradient descent on this function decreases $V$ at each step. The decay term ($\tau = 100$ms) ensures bounded gradients. Information propagates through the $k=7$ topology in $O(D)$ hops, where $D = O(\log N)$ for scale-free networks. Total convergence time is $O(D \cdot \tau) = O(\log N \cdot 100\text{ms})$.
+\end{proof}
+
+\subsection{Scale-Free Correlation}
+
+\begin{theorem}[Topological Correlation Length]
+With $k=7$ topological neighbor coordination, the correlation length $\xi$ scales linearly with system size $N$:
+\begin{equation}
+\xi \propto N
+\end{equation}
+\end{theorem}
+
+This follows directly from Cavagna et al.~\cite{cavagna2010scale}. In contrast, metric-based coordination (fixed distance threshold) yields $\xi = O(1)$, independent of system size.
+
+\begin{corollary}
+Information propagates across the entire network in $O(\log N)$ coordination cycles, enabling fleet-wide response to local events.
+\end{corollary}
+
+\subsection{Byzantine Fault Tolerance}
+
+\begin{theorem}[Consensus Safety]
+The threshold consensus protocol achieves agreement among correct nodes when $f < k/3$ neighbors are Byzantine-faulty.
+\end{theorem}
+
+\begin{proof}
+With $k=7$ neighbors, we tolerate $f \leq 2$ Byzantine faults per node. The voting mechanism requires $\lceil 2k/3 \rceil + 1 = 5$ agreeing votes for consensus. With at most 2 malicious votes, honest nodes cannot be outvoted. This satisfies the $N \geq 3f + 1$ requirement for Byzantine agreement.
+\end{proof}
+
+\begin{theorem}[Partition Safety]
+During network partition, at most one partition can commit decisions.
+\end{theorem}
+
+\begin{proof}
+Only the partition containing $> N/2$ nodes can achieve quorum. The minority partition enters freeze mode, preventing decision commits. Epoch numbering ensures stale decisions from before partition are detected and rejected during reconciliation.
+\end{proof}
+
+\subsection{Planning-Execution Integration}
+
+\begin{theorem}[Slack Field Invariant]
+The slack field maintains the invariant:
+\begin{equation}
+\forall t: \text{FIELD\_SLACK}_i \in [0, 1]
+\end{equation}
+and correctly represents relative deadline pressure across the network.
+\end{theorem}
+
+\begin{proof}
+The clamping operation in the slack-field mapping ensures bounded output. The normalization factor $\tau_{\text{norm}} = 100$s covers the operational range. Gradient computation over $k=7$ neighbors provides local comparison that propagates globally via the scale-free topology.
+\end{proof}
+
+\begin{theorem}[Deadline Feasibility]
+If the MAPF solution has positive slack for all tasks, and execution follows the \hybridcbs{} protocol with $\text{dev}(a, t) < \theta_{\text{replan}}$, all deadlines are met.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+The slack budget absorbs execution deviations. When deviation exceeds threshold, local replanning restores the path toward the planned trajectory. The field gradient directs resources toward deadline-constrained modules. Combined with the convergence theorem, deadline feasibility is preserved under bounded perturbations.
+\end{proof}

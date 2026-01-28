@@ -1,0 +1,60 @@
+% Conflict Taxonomy: 6 conflict classes visual grid
+\begin{tikzpicture}[
+    scale=0.6,
+    box/.style={draw, minimum width=2.8cm, minimum height=2cm, align=center},
+    agent/.style={circle, minimum size=0.3cm, draw, thick}
+]
+
+% Row 1
+\node[box] (c1) at (0, 0) {};
+\node[above] at (c1.north) {\small\textbf{$C_1$: LINEAR}};
+\draw[brown, very thick] (-1, -0.3) -- (1, -0.3);
+\node[agent, fill=brown!60] at (-0.3, -0.3) {};
+\node[agent, fill=brown!40] at (0.3, -0.3) {};
+\draw[red, ->] (-0.1, -0.3) -- (0.1, -0.3);
+\node[below] at (c1.south) {\tiny 1D-1D};
+
+\node[box] (c2) at (4, 0) {};
+\node[above] at (c2.north) {\small\textbf{$C_2$: PLANAR}};
+\fill[gray!20] (3, -0.8) rectangle (5, 0.4);
+\node[agent, fill=green!60] at (3.7, -0.2) {};
+\node[agent, fill=green!40] at (4.3, -0.2) {};
+\draw[red, dashed] (4, -0.5) circle (0.4);
+\node[below] at (c2.south) {\tiny 2D-2D};
+
+\node[box] (c3) at (8, 0) {};
+\node[above] at (c3.north) {\small\textbf{$C_3$: CROSSING}};
+\fill[gray!20] (7, -0.8) rectangle (9, 0.4);
+\draw[brown, very thick] (7.2, -0.2) -- (8.8, -0.2);
+\node[agent, fill=brown!60] at (7.7, -0.2) {};
+\node[agent, fill=green!60] at (8.2, 0.1) {};
+\draw[red, ->] (8.2, -0.1) -- (8.2, -0.2);
+\node[below] at (c3.south) {\tiny 1D-2D};
+
+% Row 2
+\node[box] (c4) at (0, -3.5) {};
+\node[above] at (c4.north) {\small\textbf{$C_4$: AERIAL}};
+\fill[blue!10] (-1, -4.3) rectangle (1, -3.1);
+\node[agent, fill=blue!60] at (-0.3, -3.7) {};
+\node[agent, fill=blue!40] at (0.3, -3.7) {};
+\draw[red, dashed] (0, -3.7) circle (0.4);
+\node[below] at (c4.south) {\tiny 3D-3D (same $\lambda$)};
+
+\node[box] (c5) at (4, -3.5) {};
+\node[above] at (c5.north) {\small\textbf{$C_5$: VERTICAL}};
+\draw[blue, dashed] (4, -4.2) -- (4, -3);
+\node[agent, fill=blue!60] at (4, -3.4) {};
+\node[agent, fill=blue!40] at (4, -3.9) {};
+\draw[red, <->] (4.2, -3.5) -- (4.2, -3.8);
+\node[below] at (c5.south) {\tiny 3D-3D (corridor)};
+
+\node[box] (c6) at (8, -3.5) {};
+\node[above] at (c6.north) {\small\textbf{$C_6$: AIR-GROUND}};
+\fill[gray!20] (7, -4.3) rectangle (9, -3.7);
+\fill[red!20] (8, -3.7) circle (0.25);
+\node[agent, fill=blue!60] at (8, -3.3) {};
+\node[agent, fill=green!60] at (8, -4) {};
+\draw[red, ->] (8, -3.5) -- (8, -3.7);
+\node[below] at (c6.south) {\tiny 3D-1D/2D};
+
+\end{tikzpicture}

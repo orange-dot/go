@@ -1,0 +1,225 @@
+// EKKL Heartbeat Module - Health Monitoring
+//
+// Implements the phi-accrual style failure detector for EK-KOR2.
+// Tracks neighbor health through periodic heartbeats.
+
+// ============================================================================
+// Health State Machine
+// ============================================================================
+
+// State transitions:
+//
+//   Unknown ──heartbeat──> Alive
+//      │                     │
+//      │                     │ miss 1-2
+//      │                     ▼
+//      │                  Suspect ──miss 3+──> Dead
+//      │                     │
+//      │                     │ heartbeat
+//      │                     ▼
+//      └───────────────── Alive
+//
+//   Dead ──heartbeat──> Alive (recovery)
+
+// ============================================================================
+// Neighbor State Structure
+// ============================================================================
+
+struct NeighborState {
+    id: u8,
+    health: HealthState,
+    last_seen: u64,
+    last_sequence: u8,
+    missed_count: u8,
+}
+
+// ============================================================================
+// Core Functions
+// ============================================================================
+
+// Process received heartbeat from a neighbor
+fn process_heartbeat(
+    state: NeighborState,
+    sequence: u8,
+    now: u64
+) -> NeighborState {
+    return NeighborState {
+        id: state.id,
+        health: HealthState::Alive,
+        last_seen: now,
+        last_sequence: sequence,
+        missed_count: 0,
+    }
+}
+
+// Check for missed heartbeats (called periodically)
+fn check_heartbeat(
+    state: NeighborState,
+    now: u64,
+    period_us: u64
+) -> NeighborState {
+    // Calculate expected heartbeats since last seen
+    let elapsed = now - state.last_seen
+    let expected = elapsed / period_us
+
+    // Already dead? Stay dead until heartbeat received
+    if state.health == HealthState::Dead {
+        return state
+    }
+
+    // Unknown? Stay unknown until heartbeat received
+    if state.health == HealthState::Unknown {
+        return state
+    }
+
+    // Check for missed heartbeats
+    if expected > state.missed_count as u64 {
+        let new_missed = expected as u8
+        let new_health = get_health_for_missed(new_missed)
+
+        return NeighborState {
+            id: state.id,
+            health: new_health,
+            last_seen: state.last_seen,
+            last_sequence: state.last_sequence,
+            missed_count: new_missed,
+        }
+    }
+
+    return state
+}
+
+// Determine health state based on missed heartbeat count
+fn get_health_for_missed(missed: u8) -> HealthState {
+    if missed == 0 {
+        return HealthState::Alive
+    } else if missed < HEARTBEAT_TIMEOUT_COUNT {
+        return HealthState::Suspect
+    } else {
+        return HealthState::Dead
+    }
+}
+
+// ============================================================================
+// Initialization
+// ============================================================================
+
+// Create initial neighbor state
+fn init_neighbor(id: u8) -> NeighborState {
+    return NeighborState {
+        id: id,
+        health: HealthState::Unknown,
+        last_seen: 0,
+        last_sequence: 0,
+        missed_count: 0,
+    }
+}
+
+// ============================================================================
+// Health Queries
+// ============================================================================
+
+// Check if neighbor is reachable (Alive or Suspect)
+fn is_reachable(state: NeighborState) -> bool {
+    if state.health == HealthState::Alive {
+        return true
+    }
+    if state.health == HealthState::Suspect {
+        return true
+    }
+    return false
+}
+
+// Check if neighbor is definitely alive
+fn is_alive(state: NeighborState) -> bool {
+    return state.health == HealthState::Alive
+}
+
+// Check if neighbor is dead
+fn is_dead(state: NeighborState) -> bool {
+    return state.health == HealthState::Dead
+}
+
+// ============================================================================
+// Failure Detection Metrics
+// ============================================================================
+
+// Calculate suspicion level (0.0 = definitely alive, 1.0 = definitely dead)
+fn suspicion_level(state: NeighborState) -> q16_16 {
+    if state.health == HealthState::Dead {
+        return 1.0q
+    }
+    if state.health == HealthState::Unknown {
+        return 0.5q
+    }
+    if state.health == HealthState::Alive {
+        return 0.0q
+    }
+    // Suspect: interpolate based on missed count
+    let ratio = state.missed_count as q16_16 / HEARTBEAT_TIMEOUT_COUNT as q16_16
+    return q16_clamp(ratio, 0.0q, 1.0q)
+}
+
+// Calculate time since last heartbeat in milliseconds
+fn time_since_last(state: NeighborState, now: u64) -> u64 {
+    if state.last_seen == 0 {
+        return 0
+    }
+    return (now - state.last_seen) / 1000
+}
+
+// ============================================================================
+// Batch Operations
+// ============================================================================
+
+// Count alive neighbors in array
+fn count_alive(neighbors: [NeighborState; 7]) -> u8 {
+    let count = 0
+    for i in 0..7 {
+        if neighbors[i].health == HealthState::Alive {
+            count = count + 1
+        }
+    }
+    return count as u8
+}
+
+// Count reachable neighbors (Alive + Suspect)
+fn count_reachable(neighbors: [NeighborState; 7]) -> u8 {
+    let count = 0
+    for i in 0..7 {
+        if is_reachable(neighbors[i]) {
+            count = count + 1
+        }
+    }
+    return count as u8
+}
+
+// Count dead neighbors
+fn count_dead(neighbors: [NeighborState; 7]) -> u8 {
+    let count = 0
+    for i in 0..7 {
+        if neighbors[i].health == HealthState::Dead {
+            count = count + 1
+        }
+    }
+    return count as u8
+}
+
+// Get overall health score (average of non-unknown neighbors)
+fn overall_health_score(neighbors: [NeighborState; 7]) -> q16_16 {
+    let total = 0.0q
+    let count = 0
+
+    for i in 0..7 {
+        if neighbors[i].health != HealthState::Unknown {
+            total = total + (1.0q - suspicion_level(neighbors[i]))
+            count = count + 1
+        }
+    }
+
+    if count == 0 {
+        return 0.0q
+    }
+
+    return total / count as q16_16
+}

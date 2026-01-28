@@ -1,0 +1,42 @@
+{
+  "id": "consensus_005",
+  "name": "consensus_timeout",
+  "module": "consensus",
+  "function": "consensus_tick",
+  "description": "Proposal times out",
+
+  "setup": {
+    "init": {"my_id": 1},
+    "propose": {
+      "proposal_type": "ModeChange",
+      "data": 42,
+      "threshold": 0.67,
+      "now": 1000000
+    },
+    "ballot_id": 1,
+    "votes": [
+      {"voter_id": 2, "vote": "Yes"},
+      {"voter_id": 3, "vote": "Yes"}
+    ]
+  },
+
+  "input": {
+    "now": 1060000
+  },
+
+  "expected": {
+    "completed_count": 1,
+    "ballot_state": {
+      "result": "Timeout",
+      "completed": true,
+      "yes_count": 2
+    }
+  },
+
+  "notes": [
+    "Only 2 votes received before timeout",
+    "Deadline was 1050000 (now=1000000 + 50000)",
+    "tick() at 1060000 finds expired ballot",
+    "Result is Timeout (not Rejected)"
+  ]
+}

@@ -1,0 +1,528 @@
+asyncapi: 3.0.0
+info:
+  title: Finance Platform Events API
+  version: 1.0.0
+  description: |
+    Event-driven finance platform demonstrating event sourcing patterns
+    with EventStoreDB for tax compliance, transaction reconciliation,
+    audit trails, and multi-currency ledger management.
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: MIT
+
+servers:
+  development:
+    host: localhost:2113
+    protocol: http
+    description: EventStoreDB development server
+  production:
+    host: eventstore.example.com:2113
+    protocol: https
+    description: EventStoreDB production server
+
+defaultContentType: application/json
+
+channels:
+  transactions:
+    address: transaction-{transactionId}
+    description: Transaction lifecycle events
+    parameters:
+      transactionId:
+        description: Unique transaction identifier
+    messages:
+      transactionCreated:
+        $ref: '#/components/messages/TransactionCreated'
+      transactionApproved:
+        $ref: '#/components/messages/TransactionApproved'
+      transactionRejected:
+        $ref: '#/components/messages/TransactionRejected'
+
+  reconciliation:
+    address: reconciliation-{batchId}
+    description: Transaction reconciliation events
+    parameters:
+      batchId:
+        description: Reconciliation batch identifier
+    messages:
+      reconciliationStarted:
+        $ref: '#/components/messages/ReconciliationStarted'
+      transactionsMatched:
+        $ref: '#/components/messages/TransactionsMatched'
+      matchingFailed:
+        $ref: '#/components/messages/MatchingFailed'
+
+  tax:
+    address: tax-{periodId}
+    description: Tax calculation and reporting events
+    parameters:
+      periodId:
+        description: Tax period identifier (e.g., 2024-Q1)
+    messages:
+      taxCalculated:
+        $ref: '#/components/messages/TaxCalculated'
+      taxReportGenerated:
+        $ref: '#/components/messages/TaxReportGenerated'
+      thresholdExceeded:
+        $ref: '#/components/messages/ThresholdExceeded'
+
+  ledger:
+    address: ledger-{currency}
+    description: Multi-currency ledger events
+    parameters:
+      currency:
+        description: ISO 4217 currency code
+    messages:
+      ledgerEntryPosted:
+        $ref: '#/components/messages/LedgerEntryPosted'
+      balanceUpdated:
+        $ref: '#/components/messages/BalanceUpdated'
+      currencyConverted:
+        $ref: '#/components/messages/CurrencyConverted'
+
+operations:
+  publishTransactionCreated:
+    action: send
+    channel:
+      $ref: '#/channels/transactions'
+    messages:
+      - $ref: '#/channels/transactions/messages/transactionCreated'
+
+  subscribeToTransactions:
+    action: receive
+    channel:
+      $ref: '#/channels/transactions'
+
+  publishReconciliationStarted:
+    action: send
+    channel:
+      $ref: '#/channels/reconciliation'
+    messages:
+      - $ref: '#/channels/reconciliation/messages/reconciliationStarted'
+
+  subscribeToReconciliation:
+    action: receive
+    channel:
+      $ref: '#/channels/reconciliation'
+
+  publishTaxCalculated:
+    action: send
+    channel:
+      $ref: '#/channels/tax'
+    messages:
+      - $ref: '#/channels/tax/messages/taxCalculated'
+
+  subscribeToTax:
+    action: receive
+    channel:
+      $ref: '#/channels/tax'
+
+  publishLedgerEntry:
+    action: send
+    channel:
+      $ref: '#/channels/ledger'
+    messages:
+      - $ref: '#/channels/ledger/messages/ledgerEntryPosted'
+
+  subscribeToLedger:
+    action: receive
+    channel:
+      $ref: '#/channels/ledger'
+
+components:
+  messages:
+    TransactionCreated:
+      name: TransactionCreated
+      title: Transaction Created
+      summary: Emitted when a new transaction is created
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/TransactionCreatedPayload'
+
+    TransactionApproved:
+      name: TransactionApproved
+      title: Transaction Approved
+      summary: Emitted when a transaction is approved
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/TransactionApprovedPayload'
+
+    TransactionRejected:
+      name: TransactionRejected
+      title: Transaction Rejected
+      summary: Emitted when a transaction is rejected
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/TransactionRejectedPayload'
+
+    ReconciliationStarted:
+      name: ReconciliationStarted
+      title: Reconciliation Started
+      summary: Emitted when a reconciliation batch starts
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ReconciliationStartedPayload'
+
+    TransactionsMatched:
+      name: TransactionsMatched
+      title: Transactions Matched
+      summary: Emitted when transactions are successfully matched
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/TransactionsMatchedPayload'
+
+    MatchingFailed:
+      name: MatchingFailed
+      title: Matching Failed
+      summary: Emitted when transaction matching fails
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/MatchingFailedPayload'
+
+    TaxCalculated:
+      name: TaxCalculated
+      title: Tax Calculated
+      summary: Emitted when tax is calculated for a transaction
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/TaxCalculatedPayload'
+
+    TaxReportGenerated:
+      name: TaxReportGenerated
+      title: Tax Report Generated
+      summary: Emitted when a tax report is generated
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/TaxReportGeneratedPayload'
+
+    ThresholdExceeded:
+      name: ThresholdExceeded
+      title: Threshold Exceeded
+      summary: Emitted when a tax threshold is exceeded
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ThresholdExceededPayload'
+
+    LedgerEntryPosted:
+      name: LedgerEntryPosted
+      title: Ledger Entry Posted
+      summary: Emitted when a ledger entry is posted
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/LedgerEntryPostedPayload'
+
+    BalanceUpdated:
+      name: BalanceUpdated
+      title: Balance Updated
+      summary: Emitted when account balance is updated
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/BalanceUpdatedPayload'
+
+    CurrencyConverted:
+      name: CurrencyConverted
+      title: Currency Converted
+      summary: Emitted when currency conversion occurs
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CurrencyConvertedPayload'
+
+  schemas:
+    Money:
+      type: object
+      required:
+        - amount
+        - currency
+      properties:
+        amount:
+          type: number
+          format: decimal
+          description: Amount in minor units (cents)
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          description: ISO 4217 currency code
+
+    TransactionCreatedPayload:
+      type: object
+      required:
+        - transactionId
+        - amount
+        - description
+        - createdAt
+        - createdBy
+      properties:
+        transactionId:
+          type: string
+          format: uuid
+        amount:
+          $ref: '#/components/schemas/Money'
+        description:
+          type: string
+        category:
+          type: string
+        sourceSystem:
+          type: string
+        reference:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+
+    TransactionApprovedPayload:
+      type: object
+      required:
+        - transactionId
+        - approvedAt
+        - approvedBy
+      properties:
+        transactionId:
+          type: string
+          format: uuid
+        approvedAt:
+          type: string
+          format: date-time
+        approvedBy:
+          type: string
+        notes:
+          type: string
+
+    TransactionRejectedPayload:
+      type: object
+      required:
+        - transactionId
+        - rejectedAt
+        - rejectedBy
+        - reason
+      properties:
+        transactionId:
+          type: string
+          format: uuid
+        rejectedAt:
+          type: string
+          format: date-time
+        rejectedBy:
+          type: string
+        reason:
+          type: string
+
+    ReconciliationStartedPayload:
+      type: object
+      required:
+        - batchId
+        - sourceA
+        - sourceB
+        - startedAt
+      properties:
+        batchId:
+          type: string
+          format: uuid
+        sourceA:
+          type: string
+        sourceB:
+          type: string
+        transactionCount:
+          type: integer
+        startedAt:
+          type: string
+          format: date-time
+
+    TransactionsMatchedPayload:
+      type: object
+      required:
+        - batchId
+        - transactionIdA
+        - transactionIdB
+        - matchScore
+        - matchedAt
+      properties:
+        batchId:
+          type: string
+          format: uuid
+        transactionIdA:
+          type: string
+          format: uuid
+        transactionIdB:
+          type: string
+          format: uuid
+        matchScore:
+          type: number
+          minimum: 0
+          maximum: 1
+        matchedAt:
+          type: string
+          format: date-time
+
+    MatchingFailedPayload:
+      type: object
+      required:
+        - batchId
+        - transactionId
+        - reason
+        - failedAt
+      properties:
+        batchId:
+          type: string
+          format: uuid
+        transactionId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+        candidates:
+          type: array
+          items:
+            type: object
+            properties:
+              transactionId:
+                type: string
+                format: uuid
+              score:
+                type: number
+        failedAt:
+          type: string
+          format: date-time
+
+    TaxCalculatedPayload:
+      type: object
+      required:
+        - transactionId
+        - taxAmount
+        - taxRate
+        - jurisdiction
+        - calculatedAt
+      properties:
+        transactionId:
+          type: string
+          format: uuid
+        taxAmount:
+          $ref: '#/components/schemas/Money'
+        taxRate:
+          type: number
+          description: Tax rate as decimal (e.g., 0.20 for 20%)
+        jurisdiction:
+          type: string
+        taxType:
+          type: string
+          enum: [VAT, GST, SALES_TAX]
+        calculatedAt:
+          type: string
+          format: date-time
+
+    TaxReportGeneratedPayload:
+      type: object
+      required:
+        - reportId
+        - periodId
+        - totalTaxable
+        - totalTax
+        - generatedAt
+      properties:
+        reportId:
+          type: string
+          format: uuid
+        periodId:
+          type: string
+        totalTaxable:
+          $ref: '#/components/schemas/Money'
+        totalTax:
+          $ref: '#/components/schemas/Money'
+        transactionCount:
+          type: integer
+        generatedAt:
+          type: string
+          format: date-time
+
+    ThresholdExceededPayload:
+      type: object
+      required:
+        - thresholdType
+        - currentValue
+        - thresholdValue
+        - jurisdiction
+        - exceededAt
+      properties:
+        thresholdType:
+          type: string
+          enum: [VAT_REGISTRATION, QUARTERLY_LIMIT, ANNUAL_LIMIT]
+        currentValue:
+          $ref: '#/components/schemas/Money'
+        thresholdValue:
+          $ref: '#/components/schemas/Money'
+        jurisdiction:
+          type: string
+        exceededAt:
+          type: string
+          format: date-time
+
+    LedgerEntryPostedPayload:
+      type: object
+      required:
+        - entryId
+        - transactionId
+        - debitAccount
+        - creditAccount
+        - amount
+        - postedAt
+      properties:
+        entryId:
+          type: string
+          format: uuid
+        transactionId:
+          type: string
+          format: uuid
+        debitAccount:
+          type: string
+        creditAccount:
+          type: string
+        amount:
+          $ref: '#/components/schemas/Money'
+        description:
+          type: string
+        postedAt:
+          type: string
+          format: date-time
+
+    BalanceUpdatedPayload:
+      type: object
+      required:
+        - accountId
+        - balance
+        - updatedAt
+      properties:
+        accountId:
+          type: string
+        previousBalance:
+          $ref: '#/components/schemas/Money'
+        balance:
+          $ref: '#/components/schemas/Money'
+        updatedAt:
+          type: string
+          format: date-time
+
+    CurrencyConvertedPayload:
+      type: object
+      required:
+        - conversionId
+        - fromAmount
+        - toAmount
+        - exchangeRate
+        - convertedAt
+      properties:
+        conversionId:
+          type: string
+          format: uuid
+        fromAmount:
+          $ref: '#/components/schemas/Money'
+        toAmount:
+          $ref: '#/components/schemas/Money'
+        exchangeRate:
+          type: number
+        rateSource:
+          type: string
+        convertedAt:
+          type: string
+          format: date-time

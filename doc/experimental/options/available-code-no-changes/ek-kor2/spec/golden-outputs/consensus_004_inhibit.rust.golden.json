@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "vector_file": "consensus_004_inhibit.json",
+    "captured_from": "rust",
+    "captured_at": "2026-01-21T02:32:58.190571Z",
+    "test_id": "consensus_004",
+    "test_name": "consensus_inhibit",
+    "module": "consensus"
+  },
+  "expected": {
+    "return": "OK",
+    "ballot_state": {
+      "result": "Cancelled",
+      "completed": true
+    }
+  },
+  "actual": {
+    "id": "consensus_004",
+    "module": "consensus",
+    "function": "consensus_inhibit",
+    "passed": false,
+    "error": "Consensus not initialized"
+  },
+  "passed": false
+}

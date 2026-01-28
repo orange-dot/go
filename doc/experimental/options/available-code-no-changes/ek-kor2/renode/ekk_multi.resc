@@ -1,0 +1,171 @@
+# EK-KOR v2 Multi-Module Test Script
+# Renode Script (.resc)
+#
+# Usage:
+#   renode ekk_multi.resc
+#
+# This script sets up multiple STM32G474 modules connected via virtual CAN
+# for testing distributed coordination (k=7 neighbors, consensus, etc.)
+#
+# Default: 7 modules (minimum for full k-neighbor topology)
+
+# Number of modules to create
+$moduleCount = 7
+
+# Create shared CAN hub (simulates CAN bus)
+emulation CreateCANHub "segmentBus"
+
+# Create modules
+echo "Creating $moduleCount EK-KOR modules..."
+
+# Module 1
+mach create "ekk_module_1"
+machine LoadPlatformDescription @stm32g474.repl
+connector Connect fdcan1 segmentBus
+machine SetSerialExecution true
+showAnalyzer usart1 "Module 1"
+
+# Module 2
+mach create "ekk_module_2"
+machine LoadPlatformDescription @stm32g474.repl
+connector Connect fdcan1 segmentBus
+machine SetSerialExecution true
+showAnalyzer usart1 "Module 2"
+
+# Module 3
+mach create "ekk_module_3"
+machine LoadPlatformDescription @stm32g474.repl
+connector Connect fdcan1 segmentBus
+machine SetSerialExecution true
+showAnalyzer usart1 "Module 3"
+
+# Module 4
+mach create "ekk_module_4"
+machine LoadPlatformDescription @stm32g474.repl
+connector Connect fdcan1 segmentBus
+machine SetSerialExecution true
+showAnalyzer usart1 "Module 4"
+
+# Module 5
+mach create "ekk_module_5"
+machine LoadPlatformDescription @stm32g474.repl
+connector Connect fdcan1 segmentBus
+machine SetSerialExecution true
+showAnalyzer usart1 "Module 5"
+
+# Module 6
+mach create "ekk_module_6"
+machine LoadPlatformDescription @stm32g474.repl
+connector Connect fdcan1 segmentBus
+machine SetSerialExecution true
+showAnalyzer usart1 "Module 6"
+
+# Module 7
+mach create "ekk_module_7"
+machine LoadPlatformDescription @stm32g474.repl
+connector Connect fdcan1 segmentBus
+machine SetSerialExecution true
+showAnalyzer usart1 "Module 7"
+
+# Module ID override address and magic pattern
+# Address: 0x20017FFC (end of SRAM2)
+# Format: 0xECC0XXXX where XX is module ID (1-254)
+# HAL reads this at startup to determine module ID
+
+# Macro to load ELF to all modules (different ELFs per module)
+macro loadAll
+"""
+    mach set "ekk_module_1"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00001
+    sysbus LoadELF @../build/c/ekk_module_1.elf
+    mach set "ekk_module_2"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00002
+    sysbus LoadELF @../build/c/ekk_module_2.elf
+    mach set "ekk_module_3"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00003
+    sysbus LoadELF @../build/c/ekk_module_3.elf
+    mach set "ekk_module_4"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00004
+    sysbus LoadELF @../build/c/ekk_module_4.elf
+    mach set "ekk_module_5"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00005
+    sysbus LoadELF @../build/c/ekk_module_5.elf
+    mach set "ekk_module_6"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00006
+    sysbus LoadELF @../build/c/ekk_module_6.elf
+    mach set "ekk_module_7"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00007
+    sysbus LoadELF @../build/c/ekk_module_7.elf
+"""
+
+# Macro to load same ELF to all modules (typical case)
+# Writes module ID to memory BEFORE loading ELF so HAL reads correct ID
+macro loadSame
+"""
+    mach set "ekk_module_1"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00001
+    sysbus LoadELF @ekk_test.elf
+    mach set "ekk_module_2"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00002
+    sysbus LoadELF @ekk_test.elf
+    mach set "ekk_module_3"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00003
+    sysbus LoadELF @ekk_test.elf
+    mach set "ekk_module_4"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00004
+    sysbus LoadELF @ekk_test.elf
+    mach set "ekk_module_5"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00005
+    sysbus LoadELF @ekk_test.elf
+    mach set "ekk_module_6"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00006
+    sysbus LoadELF @ekk_test.elf
+    mach set "ekk_module_7"
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00007
+    sysbus LoadELF @ekk_test.elf
+"""
+
+# Macro to start all modules simultaneously
+macro startAll
+"""
+    emulation SetGlobalSerialExecution true
+    start
+"""
+
+# Macro to pause all modules
+macro pauseAll
+"""
+    pause
+"""
+
+# Macro to kill a module (simulate failure)
+macro killModule
+"""
+    mach set $1
+    pause
+    echo "Module $1 killed - testing mesh reformation"
+"""
+
+# Synchronize time across all machines
+emulation SetGlobalQuantum "0.001"
+emulation SetGlobalSerialExecution true
+
+echo ""
+echo "============================================"
+echo "EK-KOR v2 Multi-Module Test Environment"
+echo "============================================"
+echo "Modules: 7 (full k-neighbor topology)"
+echo "Bus: Virtual CAN (segmentBus)"
+echo ""
+echo "Commands:"
+echo "  runMacro $loadSame  - Load ELF to all modules"
+echo "  runMacro $startAll  - Start all modules"
+echo "  runMacro $pauseAll  - Pause all modules"
+echo "  runMacro $killModule \"ekk_module_3\"  - Kill module 3"
+echo ""
+echo "Test scenarios:"
+echo "  1. Discovery: Watch modules find k=7 neighbors"
+echo "  2. Heartbeat: Verify liveness detection"
+echo "  3. Consensus: Propose mode change, watch voting"
+echo "  4. Failure: Kill module, verify reformation"
+echo "============================================"

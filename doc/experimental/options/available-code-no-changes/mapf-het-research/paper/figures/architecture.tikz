@@ -1,0 +1,41 @@
+% System Architecture: Planning → Execution data flow
+\begin{tikzpicture}[
+    box/.style={draw, rounded corners, minimum width=2.5cm, minimum height=1cm, align=center},
+    bigbox/.style={draw, rounded corners, minimum width=6cm, minimum height=2.5cm, align=center, dashed},
+    arrow/.style={->, >=stealth, thick}
+]
+
+% Planning Layer
+\node[bigbox, fill=blue!10] (planning) at (0, 3) {};
+\node[above] at (planning.north) {\textbf{Planning Layer (Go)}};
+
+\node[box, fill=blue!20] (mdmapf) at (-1.5, 3.2) {MD-MAPF\\Instance};
+\node[box, fill=blue!20] (cbs) at (1.5, 3.2) {CBS\\Variants};
+\node[box, fill=blue!30] (paths) at (0, 2.5) {Optimal Paths\\+ Deadlines};
+
+\draw[arrow] (mdmapf) -- (cbs);
+\draw[arrow] (cbs) -- (paths);
+
+% Bridge
+\node[box, fill=yellow!30, minimum width=5cm] (bridge) at (0, 1) {Slack-Field Mapping\\$\text{slack} \rightarrow \text{FIELD\_SLACK}$};
+
+\draw[arrow] (paths) -- (bridge);
+
+% Execution Layer
+\node[bigbox, fill=green!10] (execution) at (0, -1.5) {};
+\node[above] at (execution.north) {\textbf{Execution Layer (C/Rust)}};
+
+\node[box, fill=green!20] (field) at (-1.5, -1.2) {Potential\\Fields};
+\node[box, fill=green!20] (k7) at (1.5, -1.2) {k=7\\Neighbors};
+\node[box, fill=green!30] (consensus) at (0, -2) {Threshold\\Consensus};
+
+\draw[arrow] (bridge) -- (field);
+\draw[arrow] (bridge) -- (k7);
+\draw[arrow] (field) -- (consensus);
+\draw[arrow] (k7) -- (consensus);
+
+% Hardware
+\node[box, fill=gray!20] (hw) at (0, -3.5) {500-2000 Modules\\(STM32G474)};
+\draw[arrow] (consensus) -- (hw);
+
+\end{tikzpicture}

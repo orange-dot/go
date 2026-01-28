@@ -1,0 +1,33 @@
+{
+  "_meta": {
+    "vector_file": "field_001_publish_basic.json",
+    "captured_from": "rust",
+    "captured_at": "2026-01-21T02:32:58.244727Z",
+    "test_id": "field_001",
+    "test_name": "field_publish_basic",
+    "module": "field"
+  },
+  "expected": {
+    "return": "OK",
+    "region_state": {
+      "fields[42].source": 42,
+      "fields[42].timestamp": 1000000,
+      "fields[42].components[0]": 32768,
+      "fields[42].components[1]": 19661,
+      "fields[42].components[2]": 52429,
+      "fields[42].sequence": 2
+    }
+  },
+  "actual": {
+    "region_state": {
+      "fields[42].components[0]": 32768,
+      "fields[42].components[1]": 19661,
+      "fields[42].components[2]": 52429,
+      "fields[42].sequence": 1,
+      "fields[42].source": 42,
+      "fields[42].timestamp": 1000000
+    },
+    "return": "OK"
+  },
+  "passed": false
+}

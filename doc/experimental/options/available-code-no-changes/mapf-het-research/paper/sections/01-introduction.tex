@@ -1,0 +1,36 @@
+\section{Introduction}
+\label{sec:intro}
+
+Coordinating heterogeneous robot fleets presents fundamental challenges that existing Multi-Agent Path Finding (MAPF) formulations do not address. Consider a robotic battery swap station for electric buses: mobile robots navigate the 2D floor, rail-mounted manipulators operate along 1D tracks, and inspection drones traverse 3D airspace. These agents interact at shared handoff points, compete for charging resources, and must meet strict operational deadlines. Standard MAPF algorithms~\cite{sharon2015cbs,stern2019mapf} assume homogeneous agents operating in the same space, leaving this heterogeneous coordination problem unsolved.
+
+This paper bridges two research areas: MAPF planning with optimality guarantees and distributed real-time execution with scalability requirements. We present \mapfhet{}, a unified framework spanning from abstract planning to embedded coordination.
+
+\subsection{Motivating Application}
+
+Electric bus depot charging exemplifies the heterogeneous coordination challenge. A typical installation includes:
+\begin{itemize}
+    \item \textbf{500-2000 power modules} (3.3 kW each) forming reconfigurable charging points
+    \item \textbf{Rail robots} for heavy battery transport along fixed tracks
+    \item \textbf{Mobile robots} for auxiliary logistics on the depot floor
+    \item \textbf{Drones} for inspection and light-payload delivery
+\end{itemize}
+
+These agents operate in fundamentally different dimensional spaces yet must coordinate at shared resources. A rail robot cannot deviate from its track to avoid a mobile robot; a drone must land at designated pads to interact with ground systems. Existing MAPF formulations cannot capture these dimensional constraints.
+
+Furthermore, the power modules themselves require coordination: load balancing across the grid connection, thermal management, and deadline-driven charging sessions. This creates a second layer of multi-agent coordination below the robotic planning layer.
+
+\subsection{Contributions}
+
+This paper makes four contributions:
+
+\textbf{1. MD-MAPF Formulation:} We introduce Mixed-Dimensional MAPF, the first MAPF formulation with a dimensionality function $\kappa(a) \rightarrow \{1, 2, 3\}$ mapping agents to 1D rail, 2D mobile, or 3D aerial operational spaces. The vertex compatibility function $\delta(v)$ constrains which agents can access which locations, enabling precise modeling of dimensional restrictions.
+
+\textbf{2. Six-Class Dimensional Conflict Taxonomy:} We classify conflicts by dimensional interaction: LINEAR (1D-1D), PLANAR (2D-2D), CROSSING (1D-2D), AERIAL (3D-3D same layer), VERTICAL (3D-3D across layers), and AIR-GROUND (3D-1D/2D). Each class admits specialized resolution strategies that exploit dimensional structure, significantly pruning the CBS search tree.
+
+\textbf{3. Planning-Execution Unification:} We bridge the gap between optimal MAPF planning and real-time distributed execution. Deadline slack from the planning layer maps to field components in the execution layer, enabling gradient-based coordination that respects planning constraints while adapting to runtime conditions.
+
+\textbf{4. Bio-Inspired Scale-Free Coordination:} Drawing from collective behavior research~\cite{cavagna2010scale}, we implement $k=7$ topological neighbor coordination that maintains scale-free correlations across 500-2000 module installations. Information propagates in $O(\log N)$ hops regardless of physical network topology.
+
+\subsection{Paper Organization}
+
+Section~\ref{sec:related} surveys related work in MAPF, energy-aware planning, and distributed systems. Section~\ref{sec:problem} formalizes MD-MAPF, the conflict taxonomy, and the execution model. Section~\ref{sec:algorithms} presents our CBS variants: \mixedcbs{}, \ecbs{}, \deadline{}, and \hybridcbs{}. Section~\ref{sec:ekkor2} describes the \ekkor{} execution layer with potential field scheduling and topological coordination. Section~\ref{sec:theory} establishes theoretical properties. Section~\ref{sec:implementation} details implementation in Go (7K LOC) with C/Rust embedded targets. Section~\ref{sec:evaluation} presents experimental results. Section~\ref{sec:conclusion} concludes.

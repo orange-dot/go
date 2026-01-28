@@ -1,0 +1,29 @@
+{
+  "_meta": {
+    "vector_file": "consensus_001_propose_basic.json",
+    "captured_from": "rust",
+    "captured_at": "2026-01-21T02:32:58.116090Z",
+    "test_id": "consensus_001",
+    "test_name": "consensus_propose_basic",
+    "module": "consensus"
+  },
+  "expected": {
+    "return": "OK",
+    "ballot_id": 1,
+    "ballot_state": {
+      "proposer": 1,
+      "proposal_type": "ModeChange",
+      "data": 42,
+      "threshold_fixed": 43909,
+      "deadline": 1050000,
+      "result": "Pending"
+    }
+  },
+  "actual": {
+    "id": "consensus_001",
+    "module": "consensus",
+    "function": "consensus_propose",
+    "passed": true
+  },
+  "passed": true
+}

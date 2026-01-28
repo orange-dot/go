@@ -1,0 +1,153 @@
+{
+  "name": "Chaskey MAC Authentication Tests",
+  "description": "Test Chaskey-12 MAC computation and verification",
+  "tests": [
+    {
+      "id": "chaskey_empty_message",
+      "function": "ekk_auth_compute",
+      "input": {
+        "key_hex": "00000000000000000000000000000000",
+        "message_hex": "",
+        "message_len": 0
+      },
+      "expected": {
+        "tag_hex": "dd6ce07032c11bc2",
+        "comment": "Empty message with zero key (8-byte truncated tag)"
+      }
+    },
+    {
+      "id": "chaskey_one_block",
+      "function": "ekk_auth_compute",
+      "input": {
+        "key_hex": "01020304050607080910111213141516",
+        "message_hex": "00000000000000000000000000000000",
+        "message_len": 16
+      },
+      "expected": {
+        "tag_hex": "792e5db4a16e1ad4",
+        "comment": "One complete 16-byte block"
+      }
+    },
+    {
+      "id": "chaskey_partial_block",
+      "function": "ekk_auth_compute",
+      "input": {
+        "key_hex": "01020304050607080910111213141516",
+        "message_hex": "48656c6c6f",
+        "message_ascii": "Hello",
+        "message_len": 5
+      },
+      "expected": {
+        "tag_hex_pattern": "8 bytes",
+        "comment": "Partial block uses K2 subkey"
+      }
+    },
+    {
+      "id": "chaskey_verify_valid",
+      "function": "ekk_auth_verify",
+      "input": {
+        "key_hex": "00000000000000000000000000000000",
+        "message_hex": "",
+        "message_len": 0,
+        "tag_hex": "dd6ce07032c11bc2"
+      },
+      "expected": {
+        "result": true
+      }
+    },
+    {
+      "id": "chaskey_verify_invalid",
+      "function": "ekk_auth_verify",
+      "input": {
+        "key_hex": "00000000000000000000000000000000",
+        "message_hex": "",
+        "message_len": 0,
+        "tag_hex": "0000000000000000"
+      },
+      "expected": {
+        "result": false,
+        "comment": "Wrong tag should fail verification"
+      }
+    },
+    {
+      "id": "chaskey_verify_wrong_key",
+      "function": "ekk_auth_verify",
+      "input": {
+        "key_hex": "ffffffffffffffffffffffffffffffff",
+        "message_hex": "",
+        "message_len": 0,
+        "tag_hex": "dd6ce07032c11bc2"
+      },
+      "expected": {
+        "result": false,
+        "comment": "Tag from different key should fail"
+      }
+    },
+    {
+      "id": "chaskey_incremental",
+      "description": "Test incremental API matches one-shot",
+      "function": "incremental",
+      "input": {
+        "key_hex": "01020304050607080910111213141516",
+        "chunks": [
+          "48656c6c6f",
+          "20",
+          "576f726c64"
+        ],
+        "full_message": "Hello World"
+      },
+      "expected": {
+        "comment": "Incremental and one-shot should produce same tag"
+      }
+    },
+    {
+      "id": "chaskey_message_auth",
+      "function": "ekk_auth_message",
+      "input": {
+        "key_hex": "01020304050607080910111213141516",
+        "sender_id": 42,
+        "msg_type": 5,
+        "data_hex": "12345678"
+      },
+      "expected": {
+        "comment": "Authenticates: sender_id | msg_type | data"
+      }
+    },
+    {
+      "id": "auth_required_vote",
+      "function": "ekk_auth_is_required",
+      "input": {
+        "msg_type": 5,
+        "msg_type_name": "EKK_MSG_VOTE"
+      },
+      "expected": {
+        "result": true
+      }
+    },
+    {
+      "id": "auth_required_heartbeat",
+      "function": "ekk_auth_is_required",
+      "input": {
+        "msg_type": 1,
+        "msg_type_name": "EKK_MSG_HEARTBEAT"
+      },
+      "expected": {
+        "result": false,
+        "comment": "Heartbeat auth is optional (disabled by default)"
+      }
+    },
+    {
+      "id": "keyring_set_get",
+      "function": "keyring",
+      "steps": [
+        {"op": "init"},
+        {"op": "set", "module_id": 42, "key_hex": "01020304050607080910111213141516"},
+        {"op": "has", "module_id": 42, "expected": true},
+        {"op": "has", "module_id": 43, "expected": false},
+        {"op": "get", "module_id": 42, "expected": "non-null"},
+        {"op": "clear", "module_id": 42},
+        {"op": "has", "module_id": 42, "expected": false}
+      ]
+    }
+  ]
+}

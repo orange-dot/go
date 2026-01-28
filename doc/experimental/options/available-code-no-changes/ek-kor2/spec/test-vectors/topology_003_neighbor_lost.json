@@ -1,0 +1,42 @@
+{
+  "id": "topology_003",
+  "name": "topology_neighbor_lost",
+  "module": "topology",
+  "function": "topology_on_neighbor_lost",
+  "description": "Handle neighbor loss and reelection",
+
+  "setup": {
+    "init": {
+      "my_id": 50,
+      "metric": "Logical"
+    },
+    "discoveries": [
+      {"sender_id": 51},
+      {"sender_id": 49},
+      {"sender_id": 52},
+      {"sender_id": 48},
+      {"sender_id": 53},
+      {"sender_id": 47},
+      {"sender_id": 54},
+      {"sender_id": 46}
+    ],
+    "initial_neighbors": [49, 51, 48, 52, 47, 53, 46]
+  },
+
+  "input": {
+    "lost_id": 49
+  },
+
+  "expected": {
+    "return": "OK",
+    "neighbor_count": 7,
+    "neighbors_contain": [51, 48, 52, 47, 53, 46, 54],
+    "neighbors_not_contain": [49]
+  },
+
+  "notes": [
+    "Module 49 was lost (distance=1)",
+    "Reelection promotes module 54 (distance=4) to neighbor",
+    "Total neighbors remains k=7"
+  ]
+}

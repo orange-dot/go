@@ -1,0 +1,49 @@
+{
+  "id": "gossip_004",
+  "name": "gossip_version_vector_merge",
+  "module": "gossip",
+  "function": "ekk_vv_merge",
+  "description": "Merge version vectors from multiple sources",
+
+  "test_cases": [
+    {
+      "name": "element_wise_max",
+      "local_vv": {"1": 10, "2": 5, "3": 8, "4": 2},
+      "remote_vv": {"1": 8, "2": 7, "3": 6, "4": 4, "5": 3},
+      "expected_merged": {"1": 10, "2": 7, "3": 8, "4": 4, "5": 3},
+      "note": "Take max of each entry, add new entries from remote"
+    },
+    {
+      "name": "local_dominates",
+      "local_vv": {"1": 10, "2": 5},
+      "remote_vv": {"1": 8, "2": 3},
+      "expected_merged": {"1": 10, "2": 5},
+      "comparison": "AFTER",
+      "note": "Local has seen everything remote has and more"
+    },
+    {
+      "name": "remote_dominates",
+      "local_vv": {"1": 5, "2": 3},
+      "remote_vv": {"1": 8, "2": 7},
+      "expected_merged": {"1": 8, "2": 7},
+      "comparison": "BEFORE",
+      "note": "Remote is ahead, take all remote values"
+    },
+    {
+      "name": "concurrent",
+      "local_vv": {"1": 10, "2": 3},
+      "remote_vv": {"1": 5, "2": 8},
+      "expected_merged": {"1": 10, "2": 8},
+      "comparison": "CONCURRENT",
+      "note": "Neither dominates - concurrent histories"
+    },
+    {
+      "name": "identical",
+      "local_vv": {"1": 5, "2": 3},
+      "remote_vv": {"1": 5, "2": 3},
+      "expected_merged": {"1": 5, "2": 3},
+      "comparison": "EQUAL",
+      "note": "Same causal history"
+    }
+  ]
+}

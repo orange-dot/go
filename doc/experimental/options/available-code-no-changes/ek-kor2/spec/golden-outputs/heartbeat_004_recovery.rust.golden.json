@@ -1,0 +1,27 @@
+{
+  "_meta": {
+    "vector_file": "heartbeat_004_recovery.json",
+    "captured_from": "rust",
+    "captured_at": "2026-01-21T02:32:58.489887Z",
+    "test_id": "heartbeat_004",
+    "test_name": "heartbeat_recovery",
+    "module": "heartbeat"
+  },
+  "expected": {
+    "return": "OK",
+    "neighbor_state": {
+      "id": 2,
+      "health": "Alive",
+      "last_seen": 1070000,
+      "missed_count": 0
+    },
+    "callback": "on_alive"
+  },
+  "actual": {
+    "id": "heartbeat_004",
+    "module": "heartbeat",
+    "function": "heartbeat_received",
+    "passed": true
+  },
+  "passed": true
+}

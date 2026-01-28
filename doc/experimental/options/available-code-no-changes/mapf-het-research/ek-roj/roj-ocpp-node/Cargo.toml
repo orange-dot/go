@@ -1,0 +1,20 @@
+[package]
+name = "roj-ocpp-node"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "CLI node for ROJ-OCPP adapter (demonstrates OCPP to ROJ federation)"
+
+[[bin]]
+name = "roj-ocpp-node"
+path = "src/main.rs"
+
+[dependencies]
+roj-adapter-ocpp = { path = "../roj-adapter-ocpp" }
+roj-core = { path = "../roj-core-rs" }
+
+tokio = { workspace = true }
+clap = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

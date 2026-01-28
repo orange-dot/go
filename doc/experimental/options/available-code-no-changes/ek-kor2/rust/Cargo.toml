@@ -1,0 +1,48 @@
+[package]
+name = "ekk"
+version = "2.0.0"
+edition = "2021"
+authors = ["Elektrokombinacija"]
+description = "EK-KOR v2: Field-Centric Coordination RTOS"
+keywords = ["rtos", "embedded", "coordination", "distributed"]
+categories = ["embedded", "no-std", "concurrency"]
+
+[features]
+default = ["std"]
+std = ["serde", "serde_json"]
+# Enable for embedded targets (no_std)
+embedded = []
+# Enable defmt logging for embedded
+defmt-log = ["dep:defmt"]
+
+[dependencies]
+# Optional: defmt for embedded debugging
+defmt = { version = "0.3", optional = true }
+
+# Fixed-point arithmetic (pinned for rustc 1.76 compatibility)
+fixed = { version = "=1.24.0", default-features = false }
+
+# Heapless collections for no_std
+heapless = "0.8"
+
+# For JSON test vector parsing (std feature only)
+serde = { version = "1.0", features = ["derive"], optional = true }
+serde_json = { version = "1.0", optional = true }
+
+[dev-dependencies]
+# For testing (pinned for rustc 1.76 compatibility)
+proptest = "=1.4.0"
+
+[[bin]]
+name = "test_harness"
+path = "src/bin/test_harness.rs"
+
+[profile.release]
+opt-level = "s"      # Optimize for size
+lto = true
+codegen-units = 1
+panic = "abort"
+
+# Embedded profile
+[profile.release.package.ekk]
+opt-level = "z"

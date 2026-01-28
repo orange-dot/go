@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "vector_file": "heartbeat_003_dead.json",
+    "captured_from": "rust",
+    "captured_at": "2026-01-21T02:32:58.465417Z",
+    "test_id": "heartbeat_003",
+    "test_name": "heartbeat_dead",
+    "module": "heartbeat"
+  },
+  "expected": {
+    "state_changes": 1,
+    "neighbor_state": {
+      "id": 2,
+      "health": "Dead",
+      "missed_count": 5
+    }
+  },
+  "actual": {
+    "id": "heartbeat_003",
+    "module": "heartbeat",
+    "function": "heartbeat_tick",
+    "passed": true
+  },
+  "passed": true
+}

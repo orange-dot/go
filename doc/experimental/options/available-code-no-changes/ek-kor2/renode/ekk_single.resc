@@ -1,0 +1,51 @@
+# EK-KOR v2 Single Module Test Script
+# Renode Script (.resc)
+#
+# Usage:
+#   renode ekk_single.resc
+#   OR in Renode monitor:
+#   include @ekk_single.resc
+#
+# This script sets up a single STM32G474 running EK-KOR v2
+
+# Create machine
+mach create "ekk_module_1"
+
+# Load platform definition (minimal - only peripherals we use)
+machine LoadPlatformDescription @stm32g474-minimal.repl
+
+# Configure USART2 for console output (HAL uses PA2/PA3)
+showAnalyzer usart2
+
+# Load ELF binary (built by: cmake -DEKK_PLATFORM=stm32g474 ..)
+# sysbus LoadELF @ekk_test.elf
+
+# Set up logging
+logLevel -1 usart2
+logLevel 3 fdcan1
+
+# CPU configuration
+cpu PerformanceInMips 170
+
+# Create a virtual CAN hub for future multi-module tests
+emulation CreateCANHub "canHub"
+
+# Connect FDCAN1 to the hub
+connector Connect fdcan1 canHub
+
+# Macro to start the simulation
+macro reset
+"""
+    sysbus LoadELF @ekk_test.elf
+"""
+runMacro $reset
+
+# Start simulation (commented - run manually)
+# start
+
+echo "EK-KOR v2 Single Module Ready"
+echo "Commands:"
+echo "  start           - Start simulation"
+echo "  pause           - Pause simulation"
+echo "  sysbus LoadELF  - Load new binary"
+echo "  quit            - Exit Renode"

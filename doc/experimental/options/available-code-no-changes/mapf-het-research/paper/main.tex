@@ -1,0 +1,69 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{amsthm}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}{Definition}
+\newtheorem{axiom}{Axiom}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{hyperref}
+\usepackage{cleveref}
+
+\usetikzlibrary{shapes,arrows,positioning,fit,calc,decorations.pathreplacing}
+
+% Custom commands
+\newcommand{\mapfhet}{\textsc{MAPF-HET}}
+\newcommand{\ekkor}{\textsc{EK-KOR2}}
+\newcommand{\mixedcbs}{\textsc{Mixed-CBS}}
+\newcommand{\ecbs}{\textsc{E-CBS}}
+\newcommand{\hybridcbs}{\textsc{Hybrid-CBS}}
+\newcommand{\deadline}{\textsc{Deadline-CBS}}
+
+\begin{document}
+
+\title{From Planning to Execution: Heterogeneous Multi-Agent Path Finding with Field-Centric Distributed Coordination}
+
+\author{
+\IEEEauthorblockN{Bojan Janjatovi\'{c}}
+\IEEEauthorblockA{\textit{Elektrokombinacija} \\
+Kikinda, Serbia \\
+bojan.janjatovic@gmail.com}
+}
+
+\maketitle
+
+\input{sections/00-abstract}
+
+\input{sections/01-introduction}
+
+\input{sections/02-related-work}
+
+\input{sections/03-problem}
+
+\input{sections/04-algorithms}
+
+\input{sections/05-ekkor2}
+
+\input{sections/06-theory}
+
+\input{sections/07-implementation}
+
+\input{sections/08-evaluation}
+
+\input{sections/09-conclusion}
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

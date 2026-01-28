@@ -1,0 +1,42 @@
+{
+  "id": "topology_002",
+  "name": "topology_k_neighbor_limit",
+  "module": "topology",
+  "function": "topology_reelect",
+  "description": "Enforce k=7 neighbor limit",
+
+  "setup": {
+    "init": {
+      "my_id": 50,
+      "my_position": {"x": 0, "y": 0, "z": 0},
+      "metric": "Logical"
+    },
+    "discoveries": [
+      {"sender_id": 51, "sender_position": {"x": 0, "y": 0, "z": 0}},
+      {"sender_id": 49, "sender_position": {"x": 0, "y": 0, "z": 0}},
+      {"sender_id": 52, "sender_position": {"x": 0, "y": 0, "z": 0}},
+      {"sender_id": 48, "sender_position": {"x": 0, "y": 0, "z": 0}},
+      {"sender_id": 53, "sender_position": {"x": 0, "y": 0, "z": 0}},
+      {"sender_id": 47, "sender_position": {"x": 0, "y": 0, "z": 0}},
+      {"sender_id": 54, "sender_position": {"x": 0, "y": 0, "z": 0}},
+      {"sender_id": 46, "sender_position": {"x": 0, "y": 0, "z": 0}},
+      {"sender_id": 55, "sender_position": {"x": 0, "y": 0, "z": 0}},
+      {"sender_id": 45, "sender_position": {"x": 0, "y": 0, "z": 0}}
+    ]
+  },
+
+  "input": {},
+
+  "expected": {
+    "neighbor_count": 7,
+    "neighbors_contain": [49, 51, 48, 52, 47, 53, 46],
+    "neighbors_not_contain": [54, 55, 45]
+  },
+
+  "notes": [
+    "10 modules discovered, but only 7 nearest kept",
+    "Logical distances from 50: 49(1), 51(1), 48(2), 52(2), 47(3), 53(3), 46(4), 54(4), 45(5), 55(5)",
+    "k=7 means we keep: 49, 51, 48, 52, 47, 53, 46",
+    "Modules 45, 54, 55 are too far"
+  ]
+}

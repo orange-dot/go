@@ -1,0 +1,32 @@
+{
+  "id": "heartbeat_002",
+  "name": "heartbeat_suspect",
+  "module": "heartbeat",
+  "function": "heartbeat_tick",
+  "description": "Neighbor becomes suspect after missed heartbeats",
+
+  "setup": {
+    "init": {"my_id": 1},
+    "add_neighbor": {"neighbor_id": 2},
+    "received": {"sender_id": 2, "sequence": 1, "now": 1000000}
+  },
+
+  "input": {
+    "now": 1025000
+  },
+
+  "expected": {
+    "state_changes": 1,
+    "neighbor_state": {
+      "id": 2,
+      "health": "Suspect"
+    }
+  },
+
+  "notes": [
+    "Heartbeat period = 10000us (10ms)",
+    "Elapsed = 25000us = 25ms = 2.5 periods",
+    "Suspect threshold = 2 periods = 20ms",
+    "25ms > 20ms, so Suspect"
+  ]
+}

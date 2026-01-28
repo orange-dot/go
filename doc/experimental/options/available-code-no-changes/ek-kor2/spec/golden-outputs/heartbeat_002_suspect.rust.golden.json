@@ -1,0 +1,24 @@
+{
+  "_meta": {
+    "vector_file": "heartbeat_002_suspect.json",
+    "captured_from": "rust",
+    "captured_at": "2026-01-21T02:32:58.440710Z",
+    "test_id": "heartbeat_002",
+    "test_name": "heartbeat_suspect",
+    "module": "heartbeat"
+  },
+  "expected": {
+    "state_changes": 1,
+    "neighbor_state": {
+      "id": 2,
+      "health": "Suspect"
+    }
+  },
+  "actual": {
+    "id": "heartbeat_002",
+    "module": "heartbeat",
+    "function": "heartbeat_tick",
+    "passed": true
+  },
+  "passed": true
+}

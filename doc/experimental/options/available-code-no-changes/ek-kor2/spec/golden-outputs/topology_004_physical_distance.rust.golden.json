@@ -1,0 +1,37 @@
+{
+  "_meta": {
+    "vector_file": "topology_004_physical_distance.json",
+    "captured_from": "rust",
+    "captured_at": "2026-01-21T02:32:58.604381Z",
+    "test_id": "topology_004",
+    "test_name": "topology_physical_distance",
+    "module": "topology"
+  },
+  "expected": {
+    "neighbors": [
+      {
+        "id": 10,
+        "distance_squared": 1
+      },
+      {
+        "id": 2,
+        "distance_squared": 1
+      },
+      {
+        "id": 30,
+        "distance_squared": 4
+      },
+      {
+        "id": 20,
+        "distance_squared": 100
+      }
+    ]
+  },
+  "actual": {
+    "id": "topology_004",
+    "module": "topology",
+    "function": "topology_reelect",
+    "passed": true
+  },
+  "passed": true
+}

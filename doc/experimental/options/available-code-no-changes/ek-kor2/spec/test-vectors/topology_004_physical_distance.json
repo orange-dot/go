@@ -1,0 +1,41 @@
+{
+  "id": "topology_004",
+  "name": "topology_physical_distance",
+  "module": "topology",
+  "function": "topology_reelect",
+  "description": "Neighbor selection using physical distance metric",
+
+  "setup": {
+    "init": {
+      "my_id": 1,
+      "my_position": {"x": 0, "y": 0, "z": 0},
+      "metric": "Physical"
+    },
+    "discoveries": [
+      {"sender_id": 10, "sender_position": {"x": 1, "y": 0, "z": 0}},
+      {"sender_id": 20, "sender_position": {"x": 10, "y": 0, "z": 0}},
+      {"sender_id": 2, "sender_position": {"x": 0, "y": 1, "z": 0}},
+      {"sender_id": 30, "sender_position": {"x": 0, "y": 0, "z": 2}}
+    ]
+  },
+
+  "input": {},
+
+  "expected": {
+    "neighbors": [
+      {"id": 10, "distance_squared": 1},
+      {"id": 2, "distance_squared": 1},
+      {"id": 30, "distance_squared": 4},
+      {"id": 20, "distance_squared": 100}
+    ]
+  },
+
+  "notes": [
+    "Physical distance is squared Euclidean",
+    "Module 10: (1-0)² + 0 + 0 = 1",
+    "Module 2: 0 + (1-0)² + 0 = 1",
+    "Module 30: 0 + 0 + (2-0)² = 4",
+    "Module 20: (10-0)² + 0 + 0 = 100",
+    "Note: module ID does not affect physical distance"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "vector_file": "heartbeat_001_basic.json",
+    "captured_from": "rust",
+    "captured_at": "2026-01-21T02:32:58.415041Z",
+    "test_id": "heartbeat_001",
+    "test_name": "heartbeat_basic",
+    "module": "heartbeat"
+  },
+  "expected": {
+    "return": "OK",
+    "neighbor_state": {
+      "id": 2,
+      "health": "Alive",
+      "last_seen": 1000000,
+      "missed_count": 0
+    }
+  },
+  "actual": {
+    "id": "heartbeat_001",
+    "module": "heartbeat",
+    "function": "heartbeat_received",
+    "passed": true
+  },
+  "passed": true
+}

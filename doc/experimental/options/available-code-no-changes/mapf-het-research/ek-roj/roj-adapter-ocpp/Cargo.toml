@@ -1,0 +1,30 @@
+[package]
+name = "roj-adapter-ocpp"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "OCPP 2.0.1 adapter for ROJ distributed consensus protocol"
+
+[dependencies]
+roj-core = { path = "../roj-core-rs" }
+
+# Async runtime
+tokio = { workspace = true }
+futures-util = { workspace = true }
+
+# WebSocket
+tokio-tungstenite = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Utilities
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tokio-test = "0.4"

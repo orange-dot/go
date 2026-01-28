@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "vector_file": "field_003_sample_fresh.json",
+    "captured_from": "rust",
+    "captured_at": "2026-01-21T02:32:58.293698Z",
+    "test_id": "field_003",
+    "test_name": "field_sample_fresh",
+    "module": "field"
+  },
+  "expected": {
+    "return": "OK",
+    "field": {
+      "load": 0.5,
+      "thermal": 0.3,
+      "power": 0.8,
+      "source": 42
+    }
+  },
+  "actual": {
+    "id": "field_003",
+    "module": "field",
+    "function": "field_sample",
+    "passed": true
+  },
+  "passed": true
+}

@@ -1,0 +1,149 @@
+// STM32G474 Minimal Platform for EK-KOR v2 Renode Testing
+// Simplified for compatibility with Renode 1.14
+
+// CPU Core - ARM Cortex-M4F
+cpu: CPU.CortexM @ sysbus
+    cpuType: "cortex-m4f"
+    nvic: nvic
+
+// Nested Vectored Interrupt Controller (includes SysTick)
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    priorityMask: 0xF0
+    systickFrequency: 170000000
+    -> cpu@0
+
+// Memory Regions
+flash: Memory.MappedMemory @ sysbus 0x08000000
+    size: 0x80000
+
+sram1: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x14000
+
+sram2: Memory.MappedMemory @ sysbus 0x20014000
+    size: 0x4000
+
+ccmram: Memory.MappedMemory @ sysbus 0x10000000
+    size: 0x8000
+
+// USART2 - Debug console (PA2/PA3)
+usart2: UART.STM32F7_USART @ sysbus 0x40004400
+    frequency: 170000000
+    IRQ -> nvic@38
+
+// RCC - Clock control (stub - returns "enabled" for everything)
+rcc: Python.PythonPeripheral @ sysbus 0x40021000
+    size: 0x400
+    initable: true
+    script: '''
+if request.isInit:
+    regs = {}
+
+if request.isRead:
+    request.value = regs.get(request.offset, 0xFFFFFFFF)
+
+if request.isWrite:
+    regs[request.offset] = request.value
+'''
+
+// GPIO Port A (stub for UART pins)
+gpioa: Python.PythonPeripheral @ sysbus 0x48000000
+    size: 0x400
+    initable: true
+    script: '''
+if request.isInit:
+    regs = {}
+
+if request.isRead:
+    request.value = regs.get(request.offset, 0)
+
+if request.isWrite:
+    regs[request.offset] = request.value
+'''
+
+// TIM2 - Stub for microsecond timer (address 0x40000000)
+tim2: Python.PythonPeripheral @ sysbus 0x40000000
+    size: 0x400
+    initable: true
+    script: '''
+if request.isInit:
+    cnt = 0
+    arr = 0xFFFFFFFF
+    psc = 0
+    cr1 = 0
+
+if request.isRead:
+    if request.offset == 0x24:  # CNT
+        # Simulate free-running counter
+        import time
+        cnt = int(time.time() * 1000000) & 0xFFFFFFFF
+        request.value = cnt
+    elif request.offset == 0x2C:  # ARR
+        request.value = arr
+    elif request.offset == 0x28:  # PSC
+        request.value = psc
+    elif request.offset == 0x00:  # CR1
+        request.value = cr1
+    else:
+        request.value = 0
+
+if request.isWrite:
+    if request.offset == 0x2C:  # ARR
+        arr = request.value
+    elif request.offset == 0x28:  # PSC
+        psc = request.value
+    elif request.offset == 0x00:  # CR1
+        cr1 = request.value
+'''
+
+// CAN Message SRAM
+can_sram: Memory.MappedMemory @ sysbus 0x4000A400
+    size: 0xC00
+
+// FDCAN1 - bxCAN-compatible stub for CAN bus
+// Handles init sequence properly for HAL compatibility
+fdcan1: Python.PythonPeripheral @ sysbus 0x40006400
+    size: 0x400
+    initable: true
+    script: '''
+# Register offsets (bxCAN style)
+MCR = 0x00   # Master Control Register
+MSR = 0x04   # Master Status Register
+TSR = 0x08   # Transmit Status Register
+RF0R = 0x0C  # RX FIFO 0 Register
+
+# Bit definitions
+MCR_INRQ = 1 << 0   # Init request
+MCR_SLEEP = 1 << 1  # Sleep request
+MSR_INAK = 1 << 0   # Init acknowledge
+MSR_SLAK = 1 << 1   # Sleep acknowledge
+TSR_TME0 = 1 << 26  # TX mailbox 0 empty
+TSR_TME1 = 1 << 27  # TX mailbox 1 empty
+TSR_TME2 = 1 << 28  # TX mailbox 2 empty
+
+if request.isInit:
+    regs = {}
+    regs[MCR] = MCR_SLEEP  # Start in sleep mode
+    regs[MSR] = MSR_SLAK   # Sleep acknowledge
+    regs[TSR] = TSR_TME0 | TSR_TME1 | TSR_TME2  # All mailboxes empty
+
+if request.isRead:
+    request.value = regs.get(request.offset, 0)
+
+if request.isWrite:
+    regs[request.offset] = request.value
+    # Handle MCR writes - update MSR accordingly
+    if request.offset == MCR:
+        mcr = request.value
+        msr = regs.get(MSR, 0)
+        # If INRQ set, set INAK
+        if mcr & MCR_INRQ:
+            msr |= MSR_INAK
+        else:
+            msr &= ~MSR_INAK
+        # If SLEEP cleared, clear SLAK
+        if not (mcr & MCR_SLEEP):
+            msr &= ~MSR_SLAK
+        else:
+            msr |= MSR_SLAK
+        regs[MSR] = msr
+'''

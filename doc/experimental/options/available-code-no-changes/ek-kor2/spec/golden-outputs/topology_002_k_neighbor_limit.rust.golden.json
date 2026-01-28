@@ -1,0 +1,34 @@
+{
+  "_meta": {
+    "vector_file": "topology_002_k_neighbor_limit.json",
+    "captured_from": "rust",
+    "captured_at": "2026-01-21T02:32:58.555440Z",
+    "test_id": "topology_002",
+    "test_name": "topology_k_neighbor_limit",
+    "module": "topology"
+  },
+  "expected": {
+    "neighbor_count": 7,
+    "neighbors_contain": [
+      49,
+      51,
+      48,
+      52,
+      47,
+      53,
+      46
+    ],
+    "neighbors_not_contain": [
+      54,
+      55,
+      45
+    ]
+  },
+  "actual": {
+    "id": "topology_002",
+    "module": "topology",
+    "function": "topology_reelect",
+    "passed": true
+  },
+  "passed": true
+}

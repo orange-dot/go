@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "vector_file": "field_005_sample_expired.json",
+    "captured_from": "rust",
+    "captured_at": "2026-01-21T02:32:58.342212Z",
+    "test_id": "field_005",
+    "test_name": "field_sample_expired",
+    "module": "field"
+  },
+  "expected": {
+    "return": "FieldExpired"
+  },
+  "actual": {
+    "id": "field_005",
+    "module": "field",
+    "function": "field_sample",
+    "passed": true
+  },
+  "passed": true
+}

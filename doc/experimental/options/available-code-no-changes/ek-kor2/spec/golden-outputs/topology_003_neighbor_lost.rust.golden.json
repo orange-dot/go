@@ -1,0 +1,33 @@
+{
+  "_meta": {
+    "vector_file": "topology_003_neighbor_lost.json",
+    "captured_from": "rust",
+    "captured_at": "2026-01-21T02:32:58.580335Z",
+    "test_id": "topology_003",
+    "test_name": "topology_neighbor_lost",
+    "module": "topology"
+  },
+  "expected": {
+    "return": "OK",
+    "neighbor_count": 7,
+    "neighbors_contain": [
+      51,
+      48,
+      52,
+      47,
+      53,
+      46,
+      54
+    ],
+    "neighbors_not_contain": [
+      49
+    ]
+  },
+  "actual": {
+    "id": "topology_003",
+    "module": "topology",
+    "function": "topology_on_neighbor_lost",
+    "passed": true
+  },
+  "passed": true
+}

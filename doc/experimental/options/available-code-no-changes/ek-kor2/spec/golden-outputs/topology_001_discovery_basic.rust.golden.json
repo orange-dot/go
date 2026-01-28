@@ -1,0 +1,28 @@
+{
+  "_meta": {
+    "vector_file": "topology_001_discovery_basic.json",
+    "captured_from": "rust",
+    "captured_at": "2026-01-21T02:32:58.530907Z",
+    "test_id": "topology_001",
+    "test_name": "topology_discovery_basic",
+    "module": "topology"
+  },
+  "expected": {
+    "return": "OK",
+    "topology_changed": true,
+    "neighbor_count": 1,
+    "neighbors": [
+      {
+        "id": 2,
+        "logical_distance": 1
+      }
+    ]
+  },
+  "actual": {
+    "id": "topology_001",
+    "module": "topology",
+    "function": "topology_on_discovery",
+    "passed": true
+  },
+  "passed": true
+}

@@ -1,0 +1,44 @@
+{
+  "id": "gossip_007",
+  "name": "gossip_anti_entropy_sync",
+  "module": "gossip",
+  "function": "ekk_gossip_sync",
+  "description": "Anti-entropy synchronization to repair diverged replicas",
+
+  "setup": {
+    "init": {"my_id": 1, "k_neighbors": 7},
+    "add_neighbors": [2, 3],
+    "local_version_vector": {"1": 10, "2": 5, "3": 8},
+    "local_events": [
+      {"origin_id": 1, "origin_seq": 9},
+      {"origin_id": 1, "origin_seq": 10},
+      {"origin_id": 3, "origin_seq": 7},
+      {"origin_id": 3, "origin_seq": 8}
+    ]
+  },
+
+  "input": {
+    "sync_request_from": 2,
+    "remote_version_vector": {"1": 8, "2": 7, "3": 6}
+  },
+
+  "expected": {
+    "events_to_send": [
+      {"origin_id": 1, "origin_seq": 9, "reason": "remote[1]=8, local[1]=10"},
+      {"origin_id": 1, "origin_seq": 10, "reason": "remote[1]=8, local[1]=10"},
+      {"origin_id": 3, "origin_seq": 7, "reason": "remote[3]=6, local[3]=8"},
+      {"origin_id": 3, "origin_seq": 8, "reason": "remote[3]=6, local[3]=8"}
+    ],
+    "events_to_request": [
+      {"origin_id": 2, "from_seq": 6, "to_seq": 7, "reason": "remote[2]=7, local[2]=5"}
+    ],
+    "sync_direction": "BIDIRECTIONAL"
+  },
+
+  "trigger_conditions": [
+    "Periodic timer (every 10 seconds)",
+    "After network partition recovery",
+    "On explicit sync request",
+    "When gap fill fails repeatedly"
+  ]
+}

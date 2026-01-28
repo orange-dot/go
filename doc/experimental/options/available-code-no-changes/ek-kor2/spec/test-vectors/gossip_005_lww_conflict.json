@@ -1,0 +1,45 @@
+{
+  "id": "gossip_005",
+  "name": "gossip_lww_conflict_resolution",
+  "module": "gossip",
+  "function": "ekk_lww_is_newer",
+  "description": "Last-Writer-Wins conflict resolution with deterministic tiebreaker",
+
+  "test_cases": [
+    {
+      "name": "newer_timestamp_wins",
+      "event_a": {"timestamp_us": 1000000, "origin_id": 1},
+      "event_b": {"timestamp_us": 1000500, "origin_id": 2},
+      "expected_winner": "B",
+      "reason": "timestamp_b > timestamp_a"
+    },
+    {
+      "name": "same_timestamp_higher_id_wins",
+      "event_a": {"timestamp_us": 1000000, "origin_id": 3},
+      "event_b": {"timestamp_us": 1000000, "origin_id": 7},
+      "expected_winner": "B",
+      "reason": "origin_id_b > origin_id_a (tiebreaker)"
+    },
+    {
+      "name": "older_timestamp_loses",
+      "event_a": {"timestamp_us": 999000, "origin_id": 255},
+      "event_b": {"timestamp_us": 1000000, "origin_id": 1},
+      "expected_winner": "B",
+      "reason": "timestamp_b > timestamp_a (id irrelevant)"
+    },
+    {
+      "name": "identical_is_equal",
+      "event_a": {"timestamp_us": 1000000, "origin_id": 5},
+      "event_b": {"timestamp_us": 1000000, "origin_id": 5},
+      "expected_winner": "EQUAL",
+      "reason": "Same timestamp and origin - not a conflict"
+    }
+  ],
+
+  "properties": [
+    "Deterministic: same inputs always produce same winner",
+    "Total ordering: any two events can be compared",
+    "Commutative: compare(a,b) consistent with compare(b,a)",
+    "Antisymmetric: if a > b then b < a"
+  ]
+}

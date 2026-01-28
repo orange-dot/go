@@ -1,0 +1,45 @@
+{
+  "id": "heartbeat_004",
+  "name": "heartbeat_recovery",
+  "module": "heartbeat",
+  "function": "heartbeat_received",
+  "description": "Dead neighbor recovers with new heartbeat",
+
+  "setup": {
+    "init": {"my_id": 1},
+    "add_neighbor": {"neighbor_id": 2},
+    "received": {"sender_id": 2, "sequence": 1, "now": 1000000},
+    "tick": {"now": 1060000}
+  },
+
+  "precondition": {
+    "neighbor_state": {
+      "id": 2,
+      "health": "Dead"
+    }
+  },
+
+  "input": {
+    "sender_id": 2,
+    "sequence": 10,
+    "now": 1070000
+  },
+
+  "expected": {
+    "return": "OK",
+    "neighbor_state": {
+      "id": 2,
+      "health": "Alive",
+      "last_seen": 1070000,
+      "missed_count": 0
+    },
+    "callback": "on_alive"
+  },
+
+  "notes": [
+    "Neighbor was Dead (60ms without heartbeat)",
+    "New heartbeat received at 1070000",
+    "Neighbor transitions Dead → Alive",
+    "on_alive callback invoked (resurrection)"
+  ]
+}

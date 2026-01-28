@@ -1,0 +1,58 @@
+{
+  "id": "gossip_001",
+  "name": "gossip_basic_propagation",
+  "module": "gossip",
+  "function": "ekk_gossip_tick",
+  "description": "Propagate new event to neighbor via gossip",
+
+  "setup": {
+    "init": {"my_id": 1, "k_neighbors": 7},
+    "add_neighbors": [2, 3, 4],
+    "version_vector": {
+      "1": 5,
+      "2": 3,
+      "3": 2,
+      "4": 1
+    },
+    "neighbor_cursors": {
+      "2": 4,
+      "3": 4,
+      "4": 4
+    }
+  },
+
+  "input": {
+    "local_event": {
+      "sequence": 6,
+      "timestamp_us": 1000000,
+      "event_type": "StateTransition",
+      "origin_id": 1,
+      "origin_seq": 6,
+      "hop_count": 0,
+      "payload": "0x01 0x02 0x03"
+    }
+  },
+
+  "expected": {
+    "return": "OK",
+    "gossip_messages_sent": 3,
+    "recipients": [2, 3, 4],
+    "message_format": {
+      "msg_type": "0x60",
+      "source_module": 1,
+      "event_count": 1,
+      "events": [{
+        "sequence": 6,
+        "origin_id": 1,
+        "origin_seq": 6,
+        "hop_count": 0
+      }]
+    },
+    "version_vector_after": {
+      "1": 6,
+      "2": 3,
+      "3": 2,
+      "4": 1
+    }
+  }
+}

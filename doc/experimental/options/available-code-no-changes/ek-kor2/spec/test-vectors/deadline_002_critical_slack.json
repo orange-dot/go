@@ -1,0 +1,26 @@
+{
+  "id": "deadline_002",
+  "name": "deadline_critical_slack",
+  "module": "deadline",
+  "function": "compute_slack",
+  "description": "Compute slack for a task with tight deadline (critical)",
+
+  "input": {
+    "deadline": 15000000,
+    "duration_est": 8000000,
+    "now": 0
+  },
+
+  "expected": {
+    "slack_us": 7000000,
+    "slack_normalized": 0.07,
+    "critical": true
+  },
+
+  "notes": [
+    "slack_us = deadline - (now + duration_est) = 15000000 - (0 + 8000000) = 7000000",
+    "slack_normalized = slack_us / 100000000 = 0.07",
+    "critical = slack_us < 10000000 = true (7s < 10s threshold)",
+    "SLACK_THRESHOLD_US = 10000000 (10 seconds)"
+  ]
+}

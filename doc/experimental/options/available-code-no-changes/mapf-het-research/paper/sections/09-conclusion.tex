@@ -1,0 +1,38 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+This paper presented \mapfhet{}, a unified framework for heterogeneous multi-agent coordination spanning from optimal planning to distributed real-time execution.
+
+\subsection{Summary of Contributions}
+
+\textbf{MD-MAPF Formulation:} We introduced the first MAPF formulation with explicit dimensional modeling. The dimensionality function $\kappa(a) \rightarrow \{1,2,3\}$ and vertex compatibility function $\delta(v)$ enable precise representation of agents operating in 1D rail, 2D floor, and 3D airspace environments within a unified planning framework.
+
+\textbf{Dimensional Conflict Taxonomy:} The six-class taxonomy (LINEAR, PLANAR, CROSSING, AERIAL, VERTICAL, AIR-GROUND) provides specialized resolution strategies that exploit dimensional structure. Experimental results show 5.6$\times$ speedup over baseline CBS while maintaining optimal makespan.
+
+\textbf{Planning-Execution Bridge:} The slack field mechanism maps planning deadline constraints to execution layer gradients, enabling distributed coordination that respects global optimality while adapting to local conditions. Zero energy violations and 0.1\% deadline violation rate demonstrate effective integration.
+
+\textbf{Scale-Free Coordination:} The $k=7$ topological neighbor approach, grounded in collective behavior research, achieves $O(\log N)$ convergence scaling. At 2048 modules, load balancing completes in 520ms with 42\% bandwidth utilization—a 9$\times$ reduction compared to full-mesh alternatives.
+
+\subsection{Limitations}
+
+The current implementation assumes static dimensional assignments ($\kappa$ is constant). Reconfigurable systems where agents can change dimensionality (e.g., a ground robot that deploys a drone) would require extensions to the MD-MAPF formulation.
+
+The $k=7$ neighbor constant, while empirically validated, may not be optimal for all network topologies. Adaptive neighbor selection based on network characteristics remains future work.
+
+Energy modeling uses discrete action categories. Continuous energy models accounting for payload, wind, and battery degradation would improve accuracy for long-horizon planning.
+
+\subsection{Future Work}
+
+\textbf{Dynamic Dimensionality:} Extending MD-MAPF to handle agents that can transition between dimensional modes (e.g., amphibious vehicles, deployable drones) would broaden applicability.
+
+\textbf{Learning-Based Coordination:} Integrating learned policies for field weight adaptation and neighbor selection could improve performance in specific deployment scenarios while maintaining safety guarantees through formal verification of learned components.
+
+\textbf{Standardization:} The planning-execution interface (slack field mapping, capability bitmasks) could form the basis for an open standard enabling interoperability between planning systems and embedded controllers from different vendors.
+
+\textbf{Hardware Validation:} While our embedded implementations target STM32G474 and AURIX TC375, deployment on alternative platforms (RISC-V, custom ASICs) would validate portability claims and enable broader adoption.
+
+\subsection{Broader Impact}
+
+The techniques presented apply beyond electric vehicle charging to any domain requiring coordination of heterogeneous agents with deadline constraints: warehouse automation, port logistics, construction robotics, and agricultural fleets. The open-source implementation (planning in Go, execution in C/Rust) provides a foundation for both research extensions and commercial deployment.
+
+By unifying planning optimality with execution scalability, \mapfhet{} addresses a fundamental gap in multi-robot systems, enabling reliable coordination of heterogeneous fleets at scales previously achievable only through centralized control.

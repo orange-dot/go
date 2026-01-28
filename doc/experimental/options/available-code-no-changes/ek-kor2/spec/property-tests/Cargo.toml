@@ -1,0 +1,25 @@
+[package]
+name = "ekk-property-tests"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Property-based tests for EK-KOR2 - standalone, optional"
+
+# This is a standalone test project that does NOT affect the main ekk crate.
+# Run with: cargo test
+# Run specific module: cargo test types
+# Run with verbose output: cargo test -- --nocapture
+
+[dependencies]
+# Import main ekk crate as path dependency
+ekk = { path = "../../rust" }
+
+# Fixed-point arithmetic (same version as main crate)
+fixed = { version = "=1.24.0", default-features = false }
+
+[dev-dependencies]
+proptest = "=1.4.0"
+
+# Reduce test cases for faster CI (override with PROPTEST_CASES=1000)
+[profile.test]
+opt-level = 1

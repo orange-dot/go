@@ -1,0 +1,38 @@
+{
+  "id": "consensus_003",
+  "name": "consensus_vote_rejected",
+  "module": "consensus",
+  "function": "consensus_on_vote",
+  "description": "Proposal rejected (threshold not met)",
+
+  "setup": {
+    "init": {"my_id": 1},
+    "propose": {
+      "proposal_type": "ModeChange",
+      "data": 42,
+      "threshold": 0.67,
+      "now": 1000000
+    },
+    "ballot_id": 1
+  },
+
+  "steps": [
+    {"action": "on_vote", "input": {"voter_id": 2, "vote": "Yes", "total_voters": 7}},
+    {"action": "on_vote", "input": {"voter_id": 3, "vote": "Yes", "total_voters": 7}},
+    {"action": "on_vote", "input": {"voter_id": 4, "vote": "No", "total_voters": 7}},
+    {"action": "on_vote", "input": {"voter_id": 5, "vote": "No", "total_voters": 7}},
+    {"action": "on_vote", "input": {"voter_id": 6, "vote": "No", "total_voters": 7}},
+    {"action": "on_vote", "input": {"voter_id": 7, "vote": "No", "total_voters": 7}},
+    {
+      "action": "on_vote",
+      "input": {"voter_id": 8, "vote": "Yes", "total_voters": 7},
+      "expected": {"result": "Rejected", "yes_count": 3, "no_count": 4, "completed": true}
+    }
+  ],
+
+  "notes": [
+    "3 yes out of 7 = 42.8% < 67% threshold",
+    "All 7 votes in, threshold not reached",
+    "Result is Rejected (not Timeout)"
+  ]
+}

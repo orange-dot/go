@@ -1,0 +1,227 @@
+// EKKL Topology Module - k-Neighbor Selection
+//
+// Implements topological neighbor discovery and selection for EK-KOR2.
+// Uses k=7 neighbors based on Cavagna & Giardina (2010) starling research.
+
+// ============================================================================
+// Candidate Structure
+// ============================================================================
+
+struct Candidate {
+    id: u8,
+    position: Position,
+    distance_squared: i32,
+    last_seen: u64,
+    signal_strength: i16,
+}
+
+// ============================================================================
+// Distance Calculation
+// ============================================================================
+
+// Compute squared Euclidean distance between two positions
+fn distance_squared(a: Position, b: Position) -> i32 {
+    let dx = (a.x - b.x) as i32
+    let dy = (a.y - b.y) as i32
+    let dz = (a.z - b.z) as i32
+    return dx * dx + dy * dy + dz * dz
+}
+
+// Compute Manhattan distance (cheaper than Euclidean)
+fn distance_manhattan(a: Position, b: Position) -> i32 {
+    let dx = a.x - b.x
+    let dy = a.y - b.y
+    let dz = a.z - b.z
+
+    let abs_dx = if dx < 0 { -dx } else { dx }
+    let abs_dy = if dy < 0 { -dy } else { dy }
+    let abs_dz = if dz < 0 { -dz } else { dz }
+
+    return abs_dx as i32 + abs_dy as i32 + abs_dz as i32
+}
+
+// ============================================================================
+// Candidate Evaluation
+// ============================================================================
+
+// Score a candidate for neighbor selection
+// Lower score = better candidate
+// Factors:
+// - Distance (primary)
+// - Signal strength (secondary, for tie-breaking)
+// - Recency of discovery (tertiary)
+fn score_candidate(
+    candidate: Candidate,
+    my_position: Position,
+    now: u64
+) -> i32 {
+    // Base score is distance
+    let dist = distance_squared(my_position, candidate.position)
+
+    // Penalize old discoveries (1 point per 10ms of age)
+    let age_penalty = ((now - candidate.last_seen) / 10000) as i32
+
+    // Bonus for strong signal (negative = better)
+    let signal_bonus = -candidate.signal_strength as i32
+
+    return dist + age_penalty * 100 + signal_bonus
+}
+
+// ============================================================================
+// k-Neighbor Selection
+// ============================================================================
+
+// Select the k closest neighbors from candidates
+// Uses simple selection sort (k is small, so O(n*k) is acceptable)
+fn select_k_neighbors(
+    candidates: [Candidate; 16],
+    candidate_count: u8,
+    my_position: Position,
+    now: u64
+) -> [u8; 7] {
+    let selected = [0, 0, 0, 0, 0, 0, 0]
+    let selected_count = 0
+
+    // Track which candidates are already selected
+    let used = [false, false, false, false, false, false, false, false,
+                false, false, false, false, false, false, false, false]
+
+    // Select k best candidates
+    while selected_count < K_NEIGHBORS && selected_count < candidate_count {
+        let best_idx = 0
+        let best_score = 2147483647  // i32 max
+
+        // Find best unselected candidate
+        for i in 0..candidate_count as i64 {
+            if !used[i] {
+                let score = score_candidate(candidates[i], my_position, now)
+                if score < best_score {
+                    best_score = score
+                    best_idx = i
+                }
+            }
+        }
+
+        // Mark as used and add to selected
+        used[best_idx] = true
+        selected[selected_count] = candidates[best_idx].id
+        selected_count = selected_count + 1
+    }
+
+    return selected
+}
+
+// ============================================================================
+// Discovery
+// ============================================================================
+
+// Process a discovery beacon from another module
+fn process_discovery(
+    sender_id: u8,
+    sender_position: Position,
+    signal_strength: i16,
+    now: u64
+) -> Candidate {
+    return Candidate {
+        id: sender_id,
+        position: sender_position,
+        distance_squared: 0,  // Will be computed when scoring
+        last_seen: now,
+        signal_strength: signal_strength,
+    }
+}
+
+// Check if a candidate is still fresh (within discovery window)
+fn is_fresh_candidate(candidate: Candidate, now: u64, window_us: u64) -> bool {
+    return (now - candidate.last_seen) < window_us
+}
+
+// ============================================================================
+// Neighbor Maintenance
+// ============================================================================
+
+// Check if we should replace an existing neighbor with a new candidate
+fn should_replace(
+    current: Neighbor,
+    candidate: Candidate,
+    my_position: Position,
+    now: u64
+) -> bool {
+    // Never replace an alive neighbor with a worse candidate
+    if current.health == HealthState::Alive {
+        let current_dist = current.logical_distance
+        let candidate_dist = distance_squared(my_position, candidate.position)
+        return candidate_dist < current_dist
+    }
+
+    // Replace dead neighbors with any candidate
+    if current.health == HealthState::Dead {
+        return true
+    }
+
+    // Replace suspect neighbors if candidate is significantly closer
+    if current.health == HealthState::Suspect {
+        let current_dist = current.logical_distance
+        let candidate_dist = distance_squared(my_position, candidate.position)
+        // Require candidate to be at least 25% closer
+        return candidate_dist * 4 < current_dist * 3
+    }
+
+    // Replace unknown neighbors with any candidate
+    return true
+}
+
+// ============================================================================
+// Topology Metrics
+// ============================================================================
+
+// Calculate average distance to neighbors
+fn average_neighbor_distance(neighbors: [Neighbor; 7]) -> q16_16 {
+    let total = 0.0q
+    let count = 0
+
+    for i in 0..7 {
+        if neighbors[i].id != 0 {
+            total = total + neighbors[i].logical_distance as q16_16
+            count = count + 1
+        }
+    }
+
+    if count == 0 {
+        return 0.0q
+    }
+
+    return total / count as q16_16
+}
+
+// Calculate connectivity score (0.0 = no neighbors, 1.0 = all k neighbors alive)
+fn connectivity_score(neighbors: [Neighbor; 7]) -> q16_16 {
+    let alive = 0
+
+    for i in 0..7 {
+        if neighbors[i].health == HealthState::Alive {
+            alive = alive + 1
+        }
+    }
+
+    return alive as q16_16 / K_NEIGHBORS as q16_16
+}
+
+// Check if topology is healthy (majority of neighbors alive)
+fn is_topology_healthy(neighbors: [Neighbor; 7]) -> bool {
+    return connectivity_score(neighbors) >= SIMPLE_MAJORITY
+}
+
+// ============================================================================
+// Position Operations
+// ============================================================================
+
+// Create a position
+fn make_position(x: i16, y: i16, z: i16) -> Position {
+    return Position { x: x, y: y, z: z }
+}
+
+// Origin position
+fn origin() -> Position {
+    return Position { x: 0, y: 0, z: 0 }
+}

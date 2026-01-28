@@ -1,0 +1,253 @@
+// EKK Sync Protocol - Gateway to Cloud Event Synchronization
+//
+// Copyright (c) 2026 Elektrokombinacija
+// License: MIT
+//
+// This protocol defines the communication between the AURIX TC397 Gateway
+// and cloud event stores (KurrentDB or custom). Supports:
+// - Batch event push from gateway
+// - Event pull for recovery
+// - Bidirectional streaming for real-time sync
+//
+// Wire format: Protocol Buffers over gRPC (HTTP/2)
+
+syntax = "proto3";
+
+package ekk.sync;
+
+option go_package = "github.com/elektrokombinacija/ekk/sync";
+option java_package = "com.elektrokombinacija.ekk.sync";
+
+// ============================================================================
+// SERVICE DEFINITION
+// ============================================================================
+
+// EventSync provides bidirectional event synchronization between
+// EK-KOR gateways and cloud event stores.
+service EventSync {
+    // PushEvents - Gateway pushes events to cloud (unary)
+    // Used for batch uploads during normal operation.
+    rpc PushEvents(PushRequest) returns (PushResponse);
+
+    // PullEvents - Gateway pulls events from cloud (server streaming)
+    // Used for recovery after reconnection or initial sync.
+    rpc PullEvents(PullRequest) returns (stream Event);
+
+    // SyncStream - Bidirectional streaming for real-time sync
+    // Most efficient for continuous operation.
+    rpc SyncStream(stream SyncMessage) returns (stream SyncMessage);
+
+    // GetStreamInfo - Query stream metadata
+    rpc GetStreamInfo(StreamInfoRequest) returns (StreamInfoResponse);
+
+    // Checkpoint - Mark sync progress (for at-least-once delivery)
+    rpc Checkpoint(CheckpointRequest) returns (CheckpointResponse);
+}
+
+// ============================================================================
+// EVENT MESSAGE
+// ============================================================================
+
+// Event represents a single event in the event store.
+// Maps directly to ekk_event_v2_t from the MCU.
+message Event {
+    // Stream identification
+    string stream_id = 1;           // "ekk-module-0x42" format
+    uint64 stream_seq = 2;          // Per-stream sequence number
+    uint64 global_seq = 3;          // Global sequence (gateway-wide)
+
+    // Event metadata
+    string event_type = 4;          // "StateTransition", "FieldPublished", etc.
+    bytes data = 5;                 // Event payload (20 bytes from MCU)
+    bytes metadata = 6;             // Optional additional metadata
+
+    // Timestamps
+    uint64 timestamp_us = 7;        // Event timestamp (microseconds, module-local)
+    uint64 gateway_timestamp_us = 8; // When gateway received event
+
+    // Causality tracking
+    uint32 origin_module = 9;       // Original module that created event
+    uint32 origin_seq = 10;         // Original sequence at origin module
+    uint32 hop_count = 11;          // Gossip hops from origin
+
+    // Correlation
+    string correlation_id = 12;     // For request-response correlation
+    string causation_id = 13;       // ID of event that caused this event
+}
+
+// ============================================================================
+// PUSH (Gateway → Cloud)
+// ============================================================================
+
+// PushRequest contains a batch of events from the gateway.
+message PushRequest {
+    // Gateway identification
+    string gateway_id = 1;          // Gateway's module ID
+    string cluster_id = 2;          // Cluster identifier
+
+    // Events to push
+    repeated Event events = 3;
+
+    // Version vector for causality
+    bytes version_vector = 4;       // Compressed VV (64 bytes max)
+
+    // Checkpoint for at-least-once delivery
+    uint64 checkpoint_seq = 5;      // Last confirmed global sequence
+}
+
+// PushResponse acknowledges receipt of events.
+message PushResponse {
+    // Result
+    bool success = 1;
+    string error_message = 2;
+
+    // Sync state
+    uint64 confirmed_seq = 3;       // Highest sequence confirmed stored
+    uint32 events_stored = 4;       // Number of events stored
+
+    // Feedback
+    repeated string duplicate_ids = 5; // Events that were already stored
+}
+
+// ============================================================================
+// PULL (Cloud → Gateway)
+// ============================================================================
+
+// PullRequest queries events from cloud store.
+message PullRequest {
+    // Stream selection
+    string stream_id = 1;           // Specific stream, or "" for all
+    string cluster_id = 2;          // Cluster identifier
+
+    // Range selection (one of these)
+    oneof start_position {
+        uint64 from_global_seq = 3; // Start from global sequence
+        uint64 from_stream_seq = 4; // Start from stream sequence
+        uint64 from_timestamp_us = 5; // Start from timestamp
+        string from_checkpoint = 6; // Start from named checkpoint
+    }
+
+    // Limits
+    uint32 max_count = 7;           // Maximum events to return (0 = no limit)
+    uint64 to_timestamp_us = 8;     // End timestamp (0 = no limit)
+
+    // Filtering
+    repeated string event_types = 9; // Filter by event type
+    repeated string module_ids = 10; // Filter by origin module
+}
+
+// ============================================================================
+// BIDIRECTIONAL SYNC
+// ============================================================================
+
+// SyncMessage is used for bidirectional streaming.
+message SyncMessage {
+    oneof payload {
+        // Gateway → Cloud
+        Event event = 1;            // Single event
+        Heartbeat heartbeat = 2;    // Keep-alive
+        VectorSync vector_sync = 3; // Full version vector sync
+
+        // Cloud → Gateway
+        Ack ack = 4;                // Acknowledge event receipt
+        EventRequest request = 5;  // Request specific events
+    }
+}
+
+// Heartbeat for connection keep-alive.
+message Heartbeat {
+    string gateway_id = 1;
+    uint64 timestamp_us = 2;
+    uint64 pending_events = 3;      // Events waiting to sync
+}
+
+// VectorSync for full version vector exchange.
+message VectorSync {
+    string gateway_id = 1;
+    repeated VectorEntry entries = 2;
+}
+
+// VectorEntry in a version vector.
+message VectorEntry {
+    uint32 module_id = 1;
+    uint64 sequence = 2;
+}
+
+// Ack acknowledges receipt of events.
+message Ack {
+    repeated uint64 confirmed_seqs = 1; // Sequences confirmed
+    string gateway_id = 2;
+}
+
+// EventRequest asks for specific events (gap fill).
+message EventRequest {
+    string stream_id = 1;
+    uint64 from_seq = 2;
+    uint64 to_seq = 3;
+}
+
+// ============================================================================
+// STREAM INFO
+// ============================================================================
+
+// StreamInfoRequest queries stream metadata.
+message StreamInfoRequest {
+    string stream_id = 1;           // Specific stream or "" for all
+    string cluster_id = 2;
+}
+
+// StreamInfoResponse returns stream metadata.
+message StreamInfoResponse {
+    repeated StreamInfo streams = 1;
+}
+
+// StreamInfo describes a single event stream.
+message StreamInfo {
+    string stream_id = 1;
+    uint64 first_seq = 2;
+    uint64 last_seq = 3;
+    uint64 event_count = 4;
+    uint64 first_timestamp_us = 5;
+    uint64 last_timestamp_us = 6;
+
+    // Module state (for module streams)
+    string module_state = 7;        // "Active", "Degraded", etc.
+    uint32 neighbor_count = 8;
+}
+
+// ============================================================================
+// CHECKPOINT
+// ============================================================================
+
+// CheckpointRequest creates or updates a checkpoint.
+message CheckpointRequest {
+    string checkpoint_name = 1;     // Named checkpoint
+    string gateway_id = 2;
+    uint64 global_seq = 3;          // Sequence at checkpoint
+    uint64 timestamp_us = 4;
+}
+
+// CheckpointResponse confirms checkpoint.
+message CheckpointResponse {
+    bool success = 1;
+    string error_message = 2;
+    string checkpoint_name = 3;
+    uint64 confirmed_seq = 4;
+}
+
+// ============================================================================
+// ERROR CODES
+// ============================================================================
+
+// ErrorCode for detailed error handling.
+enum ErrorCode {
+    OK = 0;
+    INVALID_REQUEST = 1;
+    STREAM_NOT_FOUND = 2;
+    SEQUENCE_GAP = 3;
+    DUPLICATE_EVENT = 4;
+    STORAGE_FULL = 5;
+    UNAUTHORIZED = 6;
+    RATE_LIMITED = 7;
+    INTERNAL_ERROR = 8;
+}

@@ -1,0 +1,46 @@
+{
+  "id": "gossip_002",
+  "name": "gossip_duplicate_detection",
+  "module": "gossip",
+  "function": "ekk_gossip_handle_event",
+  "description": "Detect and discard duplicate event from gossip",
+
+  "setup": {
+    "init": {"my_id": 2, "k_neighbors": 7},
+    "add_neighbors": [1, 3, 4],
+    "version_vector": {
+      "1": 5,
+      "2": 3,
+      "3": 2,
+      "4": 1
+    }
+  },
+
+  "input": {
+    "gossip_message": {
+      "msg_type": "0x60",
+      "source_module": 3,
+      "event_count": 1,
+      "events": [{
+        "sequence": 999,
+        "timestamp_us": 900000,
+        "event_type": "StateTransition",
+        "origin_id": 1,
+        "origin_seq": 5,
+        "hop_count": 2,
+        "payload": "0x01 0x02 0x03"
+      }]
+    }
+  },
+
+  "expected": {
+    "return": "EKK_ERR_ALREADY_EXISTS",
+    "event_stored": false,
+    "reason": "VV[origin_id=1] = 5, received origin_seq = 5, duplicate",
+    "stats": {
+      "duplicates_received": 1
+    },
+    "version_vector_unchanged": true,
+    "ack_sent": true
+  }
+}

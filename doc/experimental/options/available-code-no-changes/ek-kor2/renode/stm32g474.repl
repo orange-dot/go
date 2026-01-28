@@ -1,0 +1,175 @@
+// STM32G474 Platform Definition for EK-KOR v2
+// Renode Platform Description Language (.repl)
+//
+// Target: STM32G474RE (Cortex-M4F @ 170MHz)
+// Used for: EK3 charger module coordination
+//
+// Memory Map:
+//   Flash:  512KB @ 0x08000000
+//   CCM:     32KB @ 0x10000000 (critical code, kernel stack)
+//   SRAM1:   80KB @ 0x20000000 (task stacks, heap)
+//   SRAM2:   16KB @ 0x20014000 (shared IPC, CAN buffers)
+
+// CPU Definition
+cpu: CPU.CortexM @ sysbus
+    cpuType: "cortex-m4f"
+    nvic: nvic
+
+// Nested Vectored Interrupt Controller
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    priorityMask: 0xF0
+    systickFrequency: 170000000
+    -> cpu@0
+
+// Flash Memory (512KB)
+flash: Memory.MappedMemory @ sysbus 0x08000000
+    size: 0x80000
+
+// CCM SRAM (32KB) - Core Coupled Memory
+// Used for: ISR vectors, critical code, kernel stack
+ccm: Memory.MappedMemory @ sysbus 0x10000000
+    size: 0x8000
+
+// SRAM1 (80KB) - Main RAM
+// Used for: Task stacks, heap, general data
+sram1: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x14000
+
+// SRAM2 (16KB) - Shared Memory
+// Used for: Coordination fields, CAN buffers, SPSC queues
+sram2: Memory.MappedMemory @ sysbus 0x20014000
+    size: 0x4000
+
+// System Configuration
+syscfg: Miscellaneous.STM32_SYSCFG @ sysbus 0x40010000
+
+// Reset and Clock Control
+rcc: Miscellaneous.STM32F4_RCC @ sysbus 0x40021000
+    rtcPeripheral: rtc
+
+// Power Control
+pwr: Miscellaneous.STM32_PWR @ sysbus 0x40007000
+
+// Real-Time Clock
+rtc: Timers.STM32F4_RTC @ sysbus 0x40002800
+    -> nvic@41
+
+// TIM2 - 32-bit General Purpose Timer
+// Used for: Microsecond timestamp (ekk_hal_time_us)
+tim2: Timers.STM32_Timer @ sysbus 0x40000000
+    frequency: 170000000
+    initialLimit: 0xFFFFFFFF
+    -> nvic@28
+
+// TIM1 - Advanced Timer
+tim1: Timers.STM32_Timer @ sysbus 0x40012C00
+    frequency: 170000000
+    initialLimit: 0xFFFF
+    -> nvic@25
+
+// TIM3 - General Purpose Timer
+tim3: Timers.STM32_Timer @ sysbus 0x40000400
+    frequency: 170000000
+    initialLimit: 0xFFFF
+    -> nvic@29
+
+// TIM6 - Basic Timer (for delays)
+tim6: Timers.STM32_Timer @ sysbus 0x40001000
+    frequency: 170000000
+    initialLimit: 0xFFFF
+    -> nvic@54
+
+// GPIO Ports
+gpioA: GPIOPort.STM32_GPIOPort @ sysbus <0x48000000, +0x400>
+    numberOfAFs: 16
+    [0-15] -> exti@[0-15]
+
+gpioB: GPIOPort.STM32_GPIOPort @ sysbus <0x48000400, +0x400>
+    numberOfAFs: 16
+    [0-15] -> exti@[0-15]
+
+gpioC: GPIOPort.STM32_GPIOPort @ sysbus <0x48000800, +0x400>
+    numberOfAFs: 16
+    [0-15] -> exti@[0-15]
+
+gpioD: GPIOPort.STM32_GPIOPort @ sysbus <0x48000C00, +0x400>
+    numberOfAFs: 16
+    [0-15] -> exti@[0-15]
+
+// External Interrupt Controller
+// Note: Simplified EXTI for Renode 1.14 compatibility (demo doesn't use GPIO IRQs)
+exti: IRQControllers.STM32F4_EXTI @ sysbus 0x40010400
+    numberOfOutputLines: 16
+    [0-4] -> nvic@[6-10]
+
+// USART1 - Debug output
+usart1: UART.STM32F7_USART @ sysbus 0x40013800
+    frequency: 170000000
+    -> nvic@37
+
+// USART2 - Additional serial
+usart2: UART.STM32F7_USART @ sysbus 0x40004400
+    frequency: 170000000
+    -> nvic@38
+
+// LPUART1 - Low power UART
+lpuart1: UART.STM32F7_USART @ sysbus 0x40008000
+    frequency: 170000000
+    -> nvic@91
+
+// I2C1
+i2c1: I2C.STM32F7_I2C @ sysbus 0x40005400
+    -> nvic@31
+
+// SPI1
+spi1: SPI.STM32SPI @ sysbus 0x40013000
+    -> nvic@35
+
+// ADC1 - Stub for voltage/current sensing (not used in demo)
+// Note: STM32G4_ADC not available in Renode 1.14, using STM32_ADC
+adc1: Analog.STM32_ADC @ sysbus 0x50000000
+    referenceVoltage: 3.3
+    -> nvic@18
+
+// DMA1 - Using STM32DMA for Renode 1.14 compatibility
+dma1: DMA.STM32DMA @ sysbus 0x40020000
+    [0-7] -> nvic@[11-17, 96]
+
+// FDCAN1 - Primary CAN bus (Segment bus)
+// Note: Using generic CAN model - FDCAN-specific features limited
+fdcan1: CAN.STMCAN @ sysbus 0x40006400
+    [0-1] -> nvic@[21, 22]
+
+// FDCAN2 - Secondary CAN (Backbone bus for gateway)
+fdcan2: CAN.STMCAN @ sysbus 0x40006800
+    [0-1] -> nvic@[86, 87]
+
+// FDCAN3 - Safety bus (for gateway role)
+fdcan3: CAN.STMCAN @ sysbus 0x40006C00
+    [0-1] -> nvic@[88, 89]
+
+// IWDG - Independent Watchdog
+iwdg: Timers.STM32_IndependentWatchdog @ sysbus 0x40003000
+    frequency: 32000
+
+// WWDG - Window Watchdog
+wwdg: Timers.STM32_WindowWatchdog @ sysbus 0x40002C00
+    frequency: 170000000
+    -> nvic@0
+
+// Flash Interface
+flashInterface: MTD.STM32L0_FlashController @ sysbus 0x40022000
+    flash: flash
+
+// CRC Unit
+crc: CRC.STM32_CRC @ sysbus 0x40023000
+
+// MPU - Memory Protection Unit (in CPU)
+// Configuration done via software
+
+sysbus:
+    init:
+        // Map peripheral bit-band alias region
+        Tag <0x42000000, 0x43FFFFFF> "PeripheralBitBand"
+        // Map SRAM bit-band alias region
+        Tag <0x22000000, 0x23FFFFFF> "SRAMBitBand"

@@ -1,0 +1,250 @@
+// EKKL Field Module - Coordination Field Operations
+//
+// Implements potential field scheduling primitives for EK-KOR2.
+// Fields are Q16.16 fixed-point values that decay exponentially over time.
+//
+// Theoretical basis:
+// - Khatib, O. (1986): Real-time obstacle avoidance using potential fields
+// - Extended from spatial path planning to temporal scheduling
+
+// ============================================================================
+// Field Gradient Computation
+// ============================================================================
+
+// Compute gradient for a specific field component
+//
+// Returns the direction of decreasing potential:
+// - Positive: neighbors have higher values (module should increase activity)
+// - Negative: neighbors have lower values (module should decrease activity)
+fn gradient(my_field: Field, neighbor: Field, component: u8) -> q16_16 {
+    let my_val = my_field.components[component]
+    let neighbor_val = neighbor.components[component]
+    return neighbor_val - my_val
+}
+
+// Compute gradient using pre-sampled values
+fn gradient_simple(my_val: q16_16, neighbor_val: q16_16) -> q16_16 {
+    return neighbor_val - my_val
+}
+
+// Compute all gradients as an array
+fn gradient_all(my_field: Field, neighbor: Field) -> [q16_16; 5] {
+    let result = [0.0q, 0.0q, 0.0q, 0.0q, 0.0q]
+    for i in 0..5 {
+        result[i] = gradient(my_field, neighbor, i as u8)
+    }
+    return result
+}
+
+// ============================================================================
+// Field Decay
+// ============================================================================
+
+// Apply exponential decay to a field value
+//
+// Uses piecewise linear approximation of exp(-t/tau):
+// - t < tau:       1.0 - t/tau * 0.632
+// - t < 2*tau:     0.368 - (t-tau)/tau * 0.233
+// - t < 3*tau:     0.135 - (t-2*tau)/tau * 0.086
+// - t < 5*tau:     0.049 * (1 - (t-3*tau)/(2*tau))
+// - t >= 5*tau:    0.0
+fn apply_decay(value: q16_16, elapsed_us: u64, tau_us: u64) -> q16_16 {
+    // Convert to fixed-point for calculation
+    let t = elapsed_us as q16_16
+    let tau = tau_us as q16_16
+
+    if elapsed_us < tau_us {
+        // First segment: exp(-1) ≈ 0.368
+        let factor = 1.0q - t / tau * 0.632q
+        return value * factor
+    } else if elapsed_us < tau_us * 2 {
+        // Second segment: exp(-2) ≈ 0.135
+        let factor = 0.368q - (t - tau) / tau * 0.233q
+        return value * factor
+    } else if elapsed_us < tau_us * 3 {
+        // Third segment: exp(-3) ≈ 0.049
+        let factor = 0.135q - (t - tau * 2.0q) / tau * 0.086q
+        return value * factor
+    } else if elapsed_us < tau_us * 5 {
+        // Fourth segment: approach zero
+        let factor = 0.049q * (1.0q - (t - tau * 3.0q) / (tau * 2.0q))
+        return value * factor
+    }
+
+    // Beyond 5*tau, field is effectively zero
+    return 0.0q
+}
+
+// Apply decay to all components of a field
+fn apply_decay_field(field: Field, elapsed_us: u64, tau_us: u64) -> Field {
+    let result = Field {
+        components: [0.0q, 0.0q, 0.0q, 0.0q, 0.0q],
+        timestamp: field.timestamp,
+        source: field.source,
+        sequence: field.sequence,
+    }
+
+    for i in 0..5 {
+        result.components[i] = apply_decay(field.components[i], elapsed_us, tau_us)
+    }
+
+    return result
+}
+
+// ============================================================================
+// Field Validity
+// ============================================================================
+
+// Check if a field is valid (not expired)
+fn is_valid(field: Field, now: u64, max_age_us: u64) -> bool {
+    if field.source == 0 {
+        return false
+    }
+    let elapsed = now - field.timestamp
+    return elapsed < max_age_us
+}
+
+// Check if a field is expired (beyond 5*tau)
+fn is_expired(field: Field, now: u64, tau_us: u64) -> bool {
+    if field.source == 0 {
+        return true
+    }
+    let elapsed = now - field.timestamp
+    return elapsed >= tau_us * 5
+}
+
+// ============================================================================
+// Field Arithmetic
+// ============================================================================
+
+// Add two fields component-wise
+fn field_add(a: Field, b: Field) -> Field {
+    let result = Field {
+        components: [0.0q, 0.0q, 0.0q, 0.0q, 0.0q],
+        timestamp: a.timestamp,
+        source: a.source,
+        sequence: a.sequence,
+    }
+
+    for i in 0..5 {
+        result.components[i] = a.components[i] + b.components[i]
+    }
+
+    return result
+}
+
+// Scale a field by a factor
+fn field_scale(field: Field, factor: q16_16) -> Field {
+    let result = Field {
+        components: [0.0q, 0.0q, 0.0q, 0.0q, 0.0q],
+        timestamp: field.timestamp,
+        source: field.source,
+        sequence: field.sequence,
+    }
+
+    for i in 0..5 {
+        result.components[i] = field.components[i] * factor
+    }
+
+    return result
+}
+
+// Linear interpolation between two fields
+fn field_lerp(a: Field, b: Field, t: q16_16) -> Field {
+    let result = Field {
+        components: [0.0q, 0.0q, 0.0q, 0.0q, 0.0q],
+        timestamp: a.timestamp,
+        source: a.source,
+        sequence: a.sequence,
+    }
+
+    let one_minus_t = 1.0q - t
+
+    for i in 0..5 {
+        result.components[i] = a.components[i] * one_minus_t + b.components[i] * t
+    }
+
+    return result
+}
+
+// ============================================================================
+// Weighted Aggregation
+// ============================================================================
+
+// Compute weighted average of neighbor fields
+// Weight is based on health state:
+// - Alive: 1.0
+// - Suspect: 0.5
+// - Dead/Unknown: 0.0 (excluded)
+fn aggregate_neighbors(neighbors: [Neighbor; 7], now: u64) -> Field {
+    let result = Field {
+        components: [0.0q, 0.0q, 0.0q, 0.0q, 0.0q],
+        timestamp: now,
+        source: 0,
+        sequence: 0,
+    }
+
+    let total_weight = 0.0q
+
+    for n in 0..7 {
+        let neighbor = neighbors[n]
+
+        // Skip dead/unknown neighbors
+        if neighbor.health == HealthState::Dead {
+            // continue - EKKL doesn't have continue, use if
+        } else if neighbor.health == HealthState::Unknown {
+            // skip
+        } else {
+            // Compute health weight
+            let health_weight = if neighbor.health == HealthState::Alive { 1.0q } else { 0.5q }
+
+            // Apply decay to neighbor's field
+            let elapsed = now - neighbor.last_field.timestamp
+            let decayed = apply_decay_field(neighbor.last_field, elapsed, FIELD_DECAY_TAU_US)
+
+            // Accumulate weighted field
+            for i in 0..5 {
+                result.components[i] = result.components[i] + decayed.components[i] * health_weight
+            }
+            total_weight = total_weight + health_weight
+        }
+    }
+
+    // Normalize by total weight
+    if total_weight > 0.0q {
+        for i in 0..5 {
+            result.components[i] = result.components[i] / total_weight
+        }
+    }
+
+    return result
+}
+
+// ============================================================================
+// Field Component Access
+// ============================================================================
+
+// Get the Load component
+fn get_load(field: Field) -> q16_16 {
+    return field.components[0]
+}
+
+// Get the Thermal component
+fn get_thermal(field: Field) -> q16_16 {
+    return field.components[1]
+}
+
+// Get the Power component
+fn get_power(field: Field) -> q16_16 {
+    return field.components[2]
+}
+
+// Create a field with load, thermal, power values
+fn make_field(load: q16_16, thermal: q16_16, power: q16_16) -> Field {
+    return Field {
+        components: [load, thermal, power, 0.0q, 0.0q],
+        timestamp: 0,
+        source: 0,
+        sequence: 0,
+    }
+}

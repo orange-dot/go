@@ -1,0 +1,39 @@
+{
+  "id": "field_001",
+  "name": "field_publish_basic",
+  "module": "field",
+  "function": "field_publish",
+  "description": "Basic field publish operation",
+
+  "input": {
+    "module_id": 42,
+    "field": {
+      "load": 0.5,
+      "thermal": 0.3,
+      "power": 0.8,
+      "custom0": 0.0,
+      "custom1": 0.0
+    },
+    "timestamp": 1000000
+  },
+
+  "expected": {
+    "return": "OK",
+    "region_state": {
+      "fields[42].source": 42,
+      "fields[42].timestamp": 1000000,
+      "fields[42].components[0]": 32768,
+      "fields[42].components[1]": 19661,
+      "fields[42].components[2]": 52429,
+      "fields[42].sequence": 2
+    }
+  },
+
+  "notes": [
+    "Fixed-point: 0.5 = 32768 (0x8000)",
+    "Fixed-point: 0.3 ≈ 19661 (0x4CCD)",
+    "Fixed-point: 0.8 ≈ 52429 (0xCCCD)",
+    "Seqlock pattern: seq goes 0->1 (write-start), 1->2 (write-complete)",
+    "After one publish, outer sequence = 2 (even = stable)"
+  ]
+}

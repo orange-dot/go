@@ -1,0 +1,142 @@
+{
+  "name": "Q15 Fixed-Point Conversion Tests",
+  "description": "Test Q16.16 to Q15 conversion and arithmetic",
+  "tests": [
+    {
+      "id": "q15_convert_zero",
+      "function": "ekk_fixed_to_q15",
+      "input": {
+        "fixed": 0
+      },
+      "expected": {
+        "q15": 0
+      }
+    },
+    {
+      "id": "q15_convert_half",
+      "function": "ekk_fixed_to_q15",
+      "input": {
+        "fixed": 32768,
+        "comment": "EKK_FIXED_HALF = 0x8000 = 0.5 in Q16.16"
+      },
+      "expected": {
+        "q15": 16384,
+        "comment": "EKK_Q15_HALF = 0x4000"
+      }
+    },
+    {
+      "id": "q15_convert_one",
+      "function": "ekk_fixed_to_q15",
+      "input": {
+        "fixed": 65536,
+        "comment": "EKK_FIXED_ONE = 1.0 in Q16.16"
+      },
+      "expected": {
+        "q15": 32767,
+        "comment": "Saturates to EKK_Q15_ONE (max positive)"
+      }
+    },
+    {
+      "id": "q15_convert_neg_half",
+      "function": "ekk_fixed_to_q15",
+      "input": {
+        "fixed": -32768
+      },
+      "expected": {
+        "q15": -16384
+      }
+    },
+    {
+      "id": "q15_convert_neg_one",
+      "function": "ekk_fixed_to_q15",
+      "input": {
+        "fixed": -65536
+      },
+      "expected": {
+        "q15": -32768,
+        "comment": "EKK_Q15_NEG_ONE"
+      }
+    },
+    {
+      "id": "q15_convert_saturate_positive",
+      "function": "ekk_fixed_to_q15",
+      "input": {
+        "fixed": 131072,
+        "comment": "2.0 in Q16.16"
+      },
+      "expected": {
+        "q15": 32767,
+        "comment": "Saturates to max positive"
+      }
+    },
+    {
+      "id": "q15_convert_saturate_negative",
+      "function": "ekk_fixed_to_q15",
+      "input": {
+        "fixed": -196608,
+        "comment": "-3.0 in Q16.16"
+      },
+      "expected": {
+        "q15": -32768,
+        "comment": "Saturates to min negative"
+      }
+    },
+    {
+      "id": "q15_to_fixed_zero",
+      "function": "ekk_q15_to_fixed",
+      "input": {
+        "q15": 0
+      },
+      "expected": {
+        "fixed": 0
+      }
+    },
+    {
+      "id": "q15_to_fixed_half",
+      "function": "ekk_q15_to_fixed",
+      "input": {
+        "q15": 16384
+      },
+      "expected": {
+        "fixed": 32768
+      }
+    },
+    {
+      "id": "q15_mul_half_half",
+      "function": "ekk_q15_mul",
+      "input": {
+        "a": 16384,
+        "b": 16384,
+        "comment": "0.5 * 0.5"
+      },
+      "expected": {
+        "result": 8192,
+        "comment": "0.25 in Q15"
+      }
+    },
+    {
+      "id": "q15_add_sat_overflow",
+      "function": "ekk_q15_add_sat",
+      "input": {
+        "a": 32767,
+        "b": 1
+      },
+      "expected": {
+        "result": 32767,
+        "comment": "Saturates to max"
+      }
+    },
+    {
+      "id": "q15_sub_sat_underflow",
+      "function": "ekk_q15_sub_sat",
+      "input": {
+        "a": -32768,
+        "b": 1
+      },
+      "expected": {
+        "result": -32768,
+        "comment": "Saturates to min"
+      }
+    }
+  ]
+}

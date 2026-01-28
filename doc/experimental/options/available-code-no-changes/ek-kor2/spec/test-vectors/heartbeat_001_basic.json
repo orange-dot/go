@@ -1,0 +1,28 @@
+{
+  "id": "heartbeat_001",
+  "name": "heartbeat_basic",
+  "module": "heartbeat",
+  "function": "heartbeat_received",
+  "description": "Process first heartbeat from neighbor",
+
+  "setup": {
+    "init": {"my_id": 1},
+    "add_neighbor": {"neighbor_id": 2}
+  },
+
+  "input": {
+    "sender_id": 2,
+    "sequence": 1,
+    "now": 1000000
+  },
+
+  "expected": {
+    "return": "OK",
+    "neighbor_state": {
+      "id": 2,
+      "health": "Alive",
+      "last_seen": 1000000,
+      "missed_count": 0
+    }
+  }
+}

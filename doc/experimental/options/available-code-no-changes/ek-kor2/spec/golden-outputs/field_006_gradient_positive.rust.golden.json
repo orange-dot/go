@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "vector_file": "field_006_gradient_positive.json",
+    "captured_from": "rust",
+    "captured_at": "2026-01-21T02:32:58.366754Z",
+    "test_id": "field_006",
+    "test_name": "field_gradient_positive",
+    "module": "field"
+  },
+  "expected": {
+    "gradient": 0.4
+  },
+  "actual": {
+    "id": "field_006",
+    "module": "field",
+    "function": "field_gradient",
+    "passed": true
+  },
+  "passed": true
+}

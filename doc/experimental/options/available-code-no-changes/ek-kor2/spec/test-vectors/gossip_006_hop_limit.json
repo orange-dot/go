@@ -1,0 +1,57 @@
+{
+  "id": "gossip_006",
+  "name": "gossip_hop_limit",
+  "module": "gossip",
+  "function": "ekk_gossip_handle_event",
+  "description": "Enforce TTL (hop limit) to prevent infinite gossip loops",
+
+  "config": {
+    "max_hops": 3
+  },
+
+  "test_cases": [
+    {
+      "name": "accept_and_forward_within_limit",
+      "setup": {"my_id": 5, "neighbors": [1, 2, 3, 4]},
+      "input": {
+        "event": {"origin_id": 1, "origin_seq": 10, "hop_count": 2}
+      },
+      "expected": {
+        "event_stored": true,
+        "forward": true,
+        "forward_hop_count": 3,
+        "forward_to": [2, 3, 4]
+      }
+    },
+    {
+      "name": "accept_but_no_forward_at_limit",
+      "setup": {"my_id": 5, "neighbors": [1, 2, 3, 4]},
+      "input": {
+        "event": {"origin_id": 1, "origin_seq": 11, "hop_count": 3}
+      },
+      "expected": {
+        "event_stored": true,
+        "forward": false,
+        "reason": "hop_count >= max_hops",
+        "stats": {"ttl_expired": 1}
+      }
+    },
+    {
+      "name": "local_event_starts_at_zero",
+      "setup": {"my_id": 1, "neighbors": [2, 3]},
+      "input": {
+        "emit_event": {"event_type": "0x01", "payload": [1, 2, 3]}
+      },
+      "expected": {
+        "created_event": {
+          "origin_id": 1,
+          "hop_count": 0
+        },
+        "forward": true,
+        "forward_hop_count": 0
+      }
+    }
+  ],
+
+  "note": "With k=7 and max_hops=3, worst case reach is 7^3 = 343 modules"
+}

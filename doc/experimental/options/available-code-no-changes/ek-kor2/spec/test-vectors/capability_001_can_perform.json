@@ -1,0 +1,65 @@
+{
+  "id": "capability_001",
+  "name": "capability_can_perform",
+  "module": "capability",
+  "function": "can_perform",
+  "description": "Test capability matching for task assignment",
+
+  "test_cases": [
+    {
+      "name": "has_all_required",
+      "have": 15,
+      "need": 5,
+      "expected": true,
+      "notes": "have=0b1111, need=0b0101 -> (have & need) == need -> true"
+    },
+    {
+      "name": "missing_one",
+      "have": 13,
+      "need": 7,
+      "expected": false,
+      "notes": "have=0b1101, need=0b0111 -> (have & need) = 0b0101 != 0b0111 -> false"
+    },
+    {
+      "name": "exact_match",
+      "have": 7,
+      "need": 7,
+      "expected": true,
+      "notes": "have=0b0111, need=0b0111 -> exact match -> true"
+    },
+    {
+      "name": "no_requirements",
+      "have": 0,
+      "need": 0,
+      "expected": true,
+      "notes": "No capabilities required -> always true"
+    },
+    {
+      "name": "v2g_required_present",
+      "have": 9,
+      "need": 8,
+      "expected": true,
+      "notes": "have=0b1001 (THERMAL_OK|V2G), need=0b1000 (V2G) -> has V2G -> true"
+    },
+    {
+      "name": "v2g_required_missing",
+      "have": 7,
+      "need": 8,
+      "expected": false,
+      "notes": "have=0b0111, need=0b1000 (V2G) -> missing V2G -> false"
+    }
+  ],
+
+  "constants": {
+    "EKK_CAP_THERMAL_OK": 1,
+    "EKK_CAP_POWER_HIGH": 2,
+    "EKK_CAP_GATEWAY": 4,
+    "EKK_CAP_V2G": 8
+  },
+
+  "notes": [
+    "MAPF-HET integration: capability-based task assignment",
+    "can_perform(have, need) = (have & need) == need",
+    "Module can only execute task if it has ALL required capabilities"
+  ]
+}

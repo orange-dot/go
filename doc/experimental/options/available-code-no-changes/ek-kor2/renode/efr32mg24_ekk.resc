@@ -1,0 +1,81 @@
+# EK-KOR v2 Single Module Test Script for EFR32MG24
+# Renode Script (.resc)
+#
+# Usage:
+#   renode efr32mg24_ekk.resc
+#
+# This script sets up a single EFR32MG24 module for basic HAL testing:
+# - Timer functionality
+# - Serial debug output
+# - HAL initialization
+#
+# Copyright (c) 2026 Elektrokombinacija
+# SPDX-License-Identifier: MIT
+
+# Create machine
+mach create "ekk_efr32"
+machine LoadPlatformDescription @efr32mg24.repl
+
+# EUSART0 output goes to Renode log (NoisyLog)
+logLevel 0 eusart0
+
+# Write unique device ID (EUI-64) to DevInfo region
+# This simulates factory-programmed device identity
+# EUI-64 Low: 0x0FE080FC
+# EUI-64 High: 0x0FE08100
+sysbus WriteDoubleWord 0x0FE080FC 0x12345678
+sysbus WriteDoubleWord 0x0FE08100 0xDEADBEEF
+
+# Module ID override address and magic pattern
+# Address: 0x2003FFFC (end of RAM)
+# Format: 0xECC0XXXX where XX is module ID (1-254)
+# HAL reads this at startup to determine module ID
+sysbus WriteDoubleWord 0x2003FFFC 0xECC00001
+
+# Macro to load ELF
+macro loadElf
+"""
+    sysbus LoadELF @efr32_ekk_test.elf
+"""
+
+# Macro to load ELF with custom module ID
+macro loadWithId
+"""
+    sysbus WriteDoubleWord 0x2003FFFC $1
+    sysbus LoadELF @efr32_ekk_test.elf
+"""
+
+# Macro to run for specified time
+macro runFor
+"""
+    emulation RunFor $1
+"""
+
+# Enable serial execution for deterministic behavior
+machine SetSerialExecution true
+
+echo ""
+echo "=============================================="
+echo "EK-KOR v2 - EFR32MG24 Single Module Test"
+echo "=============================================="
+echo "Platform: Silicon Labs EFR32MG24 (Cortex-M33)"
+echo "  - 78 MHz system clock"
+echo "  - 1.5 MB Flash, 256 KB RAM"
+echo "  - EUSART0 for debug serial"
+echo "  - TIMER0 for timestamps"
+echo ""
+echo "Module ID: 1 (0xECC00001)"
+echo "EUI-64: DEADBEEF-12345678"
+echo ""
+echo "Commands:"
+echo "  runMacro $loadElf           - Load ELF file"
+echo "  runMacro $loadWithId 0xECC00005  - Load with module ID 5"
+echo "  start                       - Start execution"
+echo "  pause                       - Pause execution"
+echo "  step                        - Single step"
+echo "  runMacro $runFor \"0.1\"      - Run for 100ms"
+echo ""
+echo "Debug:"
+echo "  sysbus ReadDoubleWord 0x2003FFFC  - Read module ID"
+echo "  cpu PC                           - Show program counter"
+echo "=============================================="

@@ -1,0 +1,170 @@
+# EK-KOR v2 Multi-Module Mesh Test Script for EFR32MG24
+# Renode Script (.resc)
+#
+# Usage:
+#   renode efr32mg24_multi.resc
+#
+# This script sets up 7 EFR32MG24 modules for mesh networking tests:
+# - Inter-module communication via EUSART (serial bridge)
+# - Future: 802.15.4 radio mesh via Renode radio framework
+# - k=7 neighbor topology testing
+#
+# ASIL-D Note:
+# For safety-critical applications, each module should have a
+# dual-chip architecture (main + safety monitor). This simulation
+# uses single-chip modules for development/testing.
+#
+# Copyright (c) 2026 Elektrokombinacija
+# SPDX-License-Identifier: MIT
+
+# Number of modules (k=7 for full neighbor topology)
+$moduleCount = 7
+
+echo "Creating $moduleCount EFR32MG24 modules..."
+
+# Module 1
+mach create "efr32_module_1"
+machine LoadPlatformDescription @efr32mg24.repl
+machine SetSerialExecution true
+showAnalyzer eusart0 "Module 1"
+sysbus WriteDoubleWord 0x0FE080FC 0x11111111
+sysbus WriteDoubleWord 0x0FE08100 0xAABBCC01
+
+# Module 2
+mach create "efr32_module_2"
+machine LoadPlatformDescription @efr32mg24.repl
+machine SetSerialExecution true
+showAnalyzer eusart0 "Module 2"
+sysbus WriteDoubleWord 0x0FE080FC 0x22222222
+sysbus WriteDoubleWord 0x0FE08100 0xAABBCC02
+
+# Module 3
+mach create "efr32_module_3"
+machine LoadPlatformDescription @efr32mg24.repl
+machine SetSerialExecution true
+showAnalyzer eusart0 "Module 3"
+sysbus WriteDoubleWord 0x0FE080FC 0x33333333
+sysbus WriteDoubleWord 0x0FE08100 0xAABBCC03
+
+# Module 4
+mach create "efr32_module_4"
+machine LoadPlatformDescription @efr32mg24.repl
+machine SetSerialExecution true
+showAnalyzer eusart0 "Module 4"
+sysbus WriteDoubleWord 0x0FE080FC 0x44444444
+sysbus WriteDoubleWord 0x0FE08100 0xAABBCC04
+
+# Module 5
+mach create "efr32_module_5"
+machine LoadPlatformDescription @efr32mg24.repl
+machine SetSerialExecution true
+showAnalyzer eusart0 "Module 5"
+sysbus WriteDoubleWord 0x0FE080FC 0x55555555
+sysbus WriteDoubleWord 0x0FE08100 0xAABBCC05
+
+# Module 6
+mach create "efr32_module_6"
+machine LoadPlatformDescription @efr32mg24.repl
+machine SetSerialExecution true
+showAnalyzer eusart0 "Module 6"
+sysbus WriteDoubleWord 0x0FE080FC 0x66666666
+sysbus WriteDoubleWord 0x0FE08100 0xAABBCC06
+
+# Module 7
+mach create "efr32_module_7"
+machine LoadPlatformDescription @efr32mg24.repl
+machine SetSerialExecution true
+showAnalyzer eusart0 "Module 7"
+sysbus WriteDoubleWord 0x0FE080FC 0x77777777
+sysbus WriteDoubleWord 0x0FE08100 0xAABBCC07
+
+# Module ID override format: 0xECC0XXXX where XX is module ID (1-254)
+# HAL reads this at startup to determine module ID
+
+# Macro to load same ELF to all modules with unique IDs
+macro loadSame
+"""
+    mach set "efr32_module_1"
+    sysbus WriteDoubleWord 0x2003FFFC 0xECC00001
+    sysbus LoadELF @efr32_ekk_test.elf
+    mach set "efr32_module_2"
+    sysbus WriteDoubleWord 0x2003FFFC 0xECC00002
+    sysbus LoadELF @efr32_ekk_test.elf
+    mach set "efr32_module_3"
+    sysbus WriteDoubleWord 0x2003FFFC 0xECC00003
+    sysbus LoadELF @efr32_ekk_test.elf
+    mach set "efr32_module_4"
+    sysbus WriteDoubleWord 0x2003FFFC 0xECC00004
+    sysbus LoadELF @efr32_ekk_test.elf
+    mach set "efr32_module_5"
+    sysbus WriteDoubleWord 0x2003FFFC 0xECC00005
+    sysbus LoadELF @efr32_ekk_test.elf
+    mach set "efr32_module_6"
+    sysbus WriteDoubleWord 0x2003FFFC 0xECC00006
+    sysbus LoadELF @efr32_ekk_test.elf
+    mach set "efr32_module_7"
+    sysbus WriteDoubleWord 0x2003FFFC 0xECC00007
+    sysbus LoadELF @efr32_ekk_test.elf
+"""
+
+# Macro to start all modules simultaneously
+macro startAll
+"""
+    emulation SetGlobalSerialExecution true
+    start
+"""
+
+# Macro to pause all modules
+macro pauseAll
+"""
+    pause
+"""
+
+# Macro to kill a module (simulate failure)
+macro killModule
+"""
+    mach set $1
+    pause
+    echo "Module $1 killed - testing mesh reformation"
+"""
+
+# Macro to run for specified time
+macro runFor
+"""
+    emulation RunFor $1
+"""
+
+# Synchronize time across all machines
+emulation SetGlobalQuantum "0.001"
+emulation SetGlobalSerialExecution true
+
+echo ""
+echo "============================================================"
+echo "EK-KOR v2 Multi-Module Test - EFR32MG24"
+echo "============================================================"
+echo "Modules: 7 (full k-neighbor topology)"
+echo "Platform: Silicon Labs EFR32MG24 (Cortex-M33 @ 78MHz)"
+echo ""
+echo "Communication: EUSART (serial)"
+echo "Future: 802.15.4 radio mesh via Renode radio framework"
+echo ""
+echo "ASIL-D Note:"
+echo "  For safety-critical applications, each module needs"
+echo "  dual-chip architecture (main + safety monitor)."
+echo "  Options:"
+echo "    A) 2x EFR32MG24 (homogeneous)"
+echo "    B) EFR32MG24 + TI C2000 F29 (heterogeneous)"
+echo ""
+echo "Commands:"
+echo "  runMacro $loadSame              - Load ELF to all modules"
+echo "  runMacro $startAll              - Start all modules"
+echo "  runMacro $pauseAll              - Pause all modules"
+echo "  runMacro $killModule \"efr32_module_3\"  - Kill module 3"
+echo "  runMacro $runFor \"1.0\"          - Run for 1 second"
+echo ""
+echo "Test scenarios:"
+echo "  1. Discovery: Watch modules find k=7 neighbors"
+echo "  2. Heartbeat: Verify liveness detection"
+echo "  3. Consensus: Propose mode change, watch voting"
+echo "  4. Failure: Kill module, verify mesh reformation"
+echo "============================================================"

@@ -1,0 +1,57 @@
+{
+  "id": "consensus_002",
+  "name": "consensus_vote_approved",
+  "module": "consensus",
+  "function": "consensus_on_vote",
+  "description": "Proposal reaches supermajority approval",
+
+  "setup": {
+    "init": {"my_id": 1},
+    "propose": {
+      "proposal_type": "ModeChange",
+      "data": 42,
+      "threshold": 0.67,
+      "now": 1000000
+    },
+    "ballot_id": 1
+  },
+
+  "steps": [
+    {
+      "action": "on_vote",
+      "input": {"voter_id": 2, "ballot_id": 1, "vote": "Yes", "total_voters": 7},
+      "expected": {"result": "Pending", "yes_count": 1, "no_count": 0}
+    },
+    {
+      "action": "on_vote",
+      "input": {"voter_id": 3, "ballot_id": 1, "vote": "Yes", "total_voters": 7},
+      "expected": {"result": "Pending", "yes_count": 2, "no_count": 0}
+    },
+    {
+      "action": "on_vote",
+      "input": {"voter_id": 4, "ballot_id": 1, "vote": "No", "total_voters": 7},
+      "expected": {"result": "Pending", "yes_count": 2, "no_count": 1}
+    },
+    {
+      "action": "on_vote",
+      "input": {"voter_id": 5, "ballot_id": 1, "vote": "Yes", "total_voters": 7},
+      "expected": {"result": "Pending", "yes_count": 3, "no_count": 1}
+    },
+    {
+      "action": "on_vote",
+      "input": {"voter_id": 6, "ballot_id": 1, "vote": "Yes", "total_voters": 7},
+      "expected": {"result": "Pending", "yes_count": 4, "no_count": 1}
+    },
+    {
+      "action": "on_vote",
+      "input": {"voter_id": 7, "ballot_id": 1, "vote": "Yes", "total_voters": 7},
+      "expected": {"result": "Approved", "yes_count": 5, "no_count": 1, "completed": true}
+    }
+  ],
+
+  "notes": [
+    "5 yes out of 7 = 71.4% >= 67% threshold",
+    "Approval triggered on 5th yes vote",
+    "Vote from module 8 would not be counted (not needed)"
+  ]
+}

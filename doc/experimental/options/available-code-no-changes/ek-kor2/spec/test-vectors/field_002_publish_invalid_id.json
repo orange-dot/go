@@ -1,0 +1,26 @@
+{
+  "id": "field_002",
+  "name": "field_publish_invalid_id",
+  "module": "field",
+  "function": "field_publish",
+  "description": "Reject publish with invalid module ID",
+
+  "input": {
+    "module_id": 0,
+    "field": {
+      "load": 0.5,
+      "thermal": 0.3,
+      "power": 0.8
+    },
+    "timestamp": 1000000
+  },
+
+  "expected": {
+    "return": "InvalidArg"
+  },
+
+  "notes": [
+    "Module ID 0 is INVALID_MODULE_ID",
+    "Should reject immediately without modifying region"
+  ]
+}

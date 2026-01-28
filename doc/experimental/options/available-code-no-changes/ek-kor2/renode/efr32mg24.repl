@@ -1,0 +1,250 @@
+// EFR32MG24 Platform Definition for EK-KOR v2 Renode Testing
+//
+// Silicon Labs EFR32MG24 (Cortex-M33, Series 2)
+// - 78 MHz system clock
+// - 1.5 MB Flash, 256 KB RAM
+// - EUSART0 for debug serial
+// - TIMER0 for microsecond timestamps
+// - Radio (802.15.4/BLE) for future mesh support
+//
+// Copyright (c) 2026 Elektrokombinacija
+// SPDX-License-Identifier: MIT
+
+// CPU Core - ARM Cortex-M33
+// Note: Using cortex-m4 in Renode as M33 may not be fully supported
+cpu: CPU.CortexM @ sysbus
+    cpuType: "cortex-m33"
+    nvic: nvic
+
+// Nested Vectored Interrupt Controller (includes SysTick)
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    priorityMask: 0xF0
+    systickFrequency: 78000000
+    -> cpu@0
+
+// Memory Regions
+flash: Memory.MappedMemory @ sysbus 0x08000000
+    size: 0x180000   // 1.5 MB
+
+ram: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x40000    // 256 KB
+
+// Device Info (Read-Only, Factory Programmed)
+// Contains EUI-64 unique device ID
+devinfo: Memory.MappedMemory @ sysbus 0x0FE08000
+    size: 0x400
+
+// CMU - Clock Management Unit (stub)
+cmu: Python.PythonPeripheral @ sysbus 0x40008000
+    size: 0x400
+    initable: true
+    script: '''
+if request.isInit:
+    regs = {}
+    # Default clock enable values
+    regs[0x000] = 0xFFFFFFFF  # CLKEN0 - all clocks enabled
+    regs[0x004] = 0xFFFFFFFF  # CLKEN1
+    regs[0x054] = 0x00000001  # STATUS - HFRCO ready
+
+if request.isRead:
+    request.value = regs.get(request.offset, 0xFFFFFFFF)
+
+if request.isWrite:
+    regs[request.offset] = request.value
+'''
+
+// TIMER0 - 32-bit timer for microsecond timestamps
+timer0: Python.PythonPeripheral @ sysbus 0x40048000
+    size: 0x100
+    initable: true
+    script: '''
+if request.isInit:
+    cnt = 0
+    top = 0xFFFFFFFF
+    ctrl = 0
+    en = 0
+    import time
+    start_time = time.time()
+
+if request.isRead:
+    if request.offset == 0x000:  # EN
+        request.value = en
+    elif request.offset == 0x004:  # CTRL
+        request.value = ctrl
+    elif request.offset == 0x018:  # CNT
+        # Simulate free-running counter at ~1 MHz
+        import time
+        elapsed = time.time() - start_time
+        cnt = int(elapsed * 1000000) & 0xFFFFFFFF
+        request.value = cnt
+    elif request.offset == 0x01C:  # TOP
+        request.value = top
+    else:
+        request.value = 0
+
+if request.isWrite:
+    if request.offset == 0x000:  # EN
+        en = request.value
+        if en & 1:
+            import time
+            start_time = time.time()
+    elif request.offset == 0x004:  # CTRL
+        ctrl = request.value
+    elif request.offset == 0x008:  # CMD
+        # START = bit 0, STOP = bit 1
+        pass
+    elif request.offset == 0x01C:  # TOP
+        top = request.value
+'''
+
+// EUSART0 - Enhanced USART for debug console (Python stub for EFR32MG24)
+eusart0: Python.PythonPeripheral @ sysbus 0x400A0000
+    size: 0x100
+    initable: true
+    script: '''
+# EFR32MG24 EUSART register offsets
+EN = 0x00
+CFG0 = 0x04
+CFG1 = 0x08
+FRAMECFG = 0x10
+CLKDIV = 0x24
+CMD = 0x28
+STATUS = 0x2C
+TXDATA = 0x3C
+RXDATA = 0x40
+
+# Status bits
+STATUS_TXIDLE = 1 << 13
+STATUS_TXC = 1 << 12
+
+if request.isInit:
+    regs = {}
+    regs[EN] = 0
+    regs[STATUS] = STATUS_TXIDLE | STATUS_TXC  # TX idle, ready
+
+if request.isRead:
+    if request.offset == STATUS:
+        # Always report TX ready
+        request.value = STATUS_TXIDLE | STATUS_TXC
+    else:
+        request.value = regs.get(request.offset, 0)
+
+if request.isWrite:
+    regs[request.offset] = request.value
+    if request.offset == TXDATA:
+        # Output character to Renode console
+        char = chr(request.value & 0xFF)
+        self.NoisyLog("EUSART TX: " + repr(char))
+'''
+
+// GPIO - General Purpose I/O (stub)
+gpio: Python.PythonPeripheral @ sysbus 0x4003C000
+    size: 0x400
+    initable: true
+    script: '''
+if request.isInit:
+    regs = {}
+
+if request.isRead:
+    request.value = regs.get(request.offset, 0)
+
+if request.isWrite:
+    regs[request.offset] = request.value
+'''
+
+// SYSCFG - System Configuration (stub)
+syscfg: Python.PythonPeripheral @ sysbus 0x4002C000
+    size: 0x100
+    initable: true
+    script: '''
+if request.isInit:
+    regs = {}
+
+if request.isRead:
+    request.value = regs.get(request.offset, 0)
+
+if request.isWrite:
+    regs[request.offset] = request.value
+'''
+
+// MSC - Memory System Controller (Flash controller stub)
+msc: Python.PythonPeripheral @ sysbus 0x40030000
+    size: 0x100
+    initable: true
+    script: '''
+if request.isInit:
+    regs = {}
+    regs[0x00C] = 0x00000001  # STATUS - ready
+
+if request.isRead:
+    request.value = regs.get(request.offset, 0)
+
+if request.isWrite:
+    regs[request.offset] = request.value
+'''
+
+// Radio (802.15.4/BLE) - stub for future mesh networking
+// Note: Full radio simulation would require Renode's radio framework
+radio: Python.PythonPeripheral @ sysbus 0x40084000
+    size: 0x1000
+    initable: true
+    script: '''
+if request.isInit:
+    regs = {}
+    # Radio in standby state
+    regs[0x000] = 0x00000001
+
+if request.isRead:
+    request.value = regs.get(request.offset, 0)
+
+if request.isWrite:
+    regs[request.offset] = request.value
+'''
+
+// LDMA - Linked DMA Controller (stub)
+ldma: Python.PythonPeripheral @ sysbus 0x40040000
+    size: 0x400
+    initable: true
+    script: '''
+if request.isInit:
+    regs = {}
+
+if request.isRead:
+    request.value = regs.get(request.offset, 0)
+
+if request.isWrite:
+    regs[request.offset] = request.value
+'''
+
+// SYSRTC - System Real-Time Counter (alternative timer)
+sysrtc: Python.PythonPeripheral @ sysbus 0x400A8000
+    size: 0x100
+    initable: true
+    script: '''
+if request.isInit:
+    cnt = 0
+    en = 0
+    import time
+    start_time = time.time()
+
+if request.isRead:
+    if request.offset == 0x000:  # EN
+        request.value = en
+    elif request.offset == 0x010:  # CNT
+        import time
+        elapsed = time.time() - start_time
+        cnt = int(elapsed * 32768) & 0xFFFFFFFF
+        request.value = cnt
+    else:
+        request.value = 0
+
+if request.isWrite:
+    if request.offset == 0x000:  # EN
+        en = request.value
+        if en & 1:
+            import time
+            start_time = time.time()
+'''
+
+// FPU - Floating Point Unit (Cortex-M33)
+// Access via System Control Block (0xE000ED88)

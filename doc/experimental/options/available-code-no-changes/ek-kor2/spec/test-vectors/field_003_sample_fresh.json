@@ -1,0 +1,39 @@
+{
+  "id": "field_003",
+  "name": "field_sample_fresh",
+  "module": "field",
+  "function": "field_sample",
+  "description": "Sample a freshly published field (no decay)",
+
+  "setup": {
+    "publish": {
+      "module_id": 42,
+      "field": {
+        "load": 0.5,
+        "thermal": 0.3,
+        "power": 0.8
+      },
+      "timestamp": 1000000
+    }
+  },
+
+  "input": {
+    "target_id": 42,
+    "now": 1000000
+  },
+
+  "expected": {
+    "return": "OK",
+    "field": {
+      "load": 0.5,
+      "thermal": 0.3,
+      "power": 0.8,
+      "source": 42
+    }
+  },
+
+  "notes": [
+    "Elapsed time = 0, so no decay applied",
+    "Values should match exactly what was published"
+  ]
+}

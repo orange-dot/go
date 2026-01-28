@@ -1,0 +1,27 @@
+{
+  "id": "field_007",
+  "name": "field_gradient_negative",
+  "module": "field",
+  "function": "field_gradient",
+  "description": "Compute gradient when we have higher load than neighbors",
+
+  "input": {
+    "my_field": {
+      "load": 0.8
+    },
+    "neighbor_aggregate": {
+      "load": 0.3
+    },
+    "component": "Load"
+  },
+
+  "expected": {
+    "gradient": -0.5
+  },
+
+  "notes": [
+    "Gradient = neighbor - self = 0.3 - 0.8 = -0.5",
+    "Negative gradient means we are more loaded than neighbors",
+    "Module should consider throttling"
+  ]
+}

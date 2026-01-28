@@ -1,0 +1,27 @@
+{
+  "id": "field_006",
+  "name": "field_gradient_positive",
+  "module": "field",
+  "function": "field_gradient",
+  "description": "Compute gradient when neighbors have higher load",
+
+  "input": {
+    "my_field": {
+      "load": 0.3
+    },
+    "neighbor_aggregate": {
+      "load": 0.7
+    },
+    "component": "Load"
+  },
+
+  "expected": {
+    "gradient": 0.4
+  },
+
+  "notes": [
+    "Gradient = neighbor - self = 0.7 - 0.3 = 0.4",
+    "Positive gradient means neighbors are more loaded",
+    "Module should consider taking more work"
+  ]
+}

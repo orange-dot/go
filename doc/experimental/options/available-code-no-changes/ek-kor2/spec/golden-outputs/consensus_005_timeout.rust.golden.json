@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "vector_file": "consensus_005_timeout.json",
+    "captured_from": "rust",
+    "captured_at": "2026-01-21T02:32:58.216466Z",
+    "test_id": "consensus_005",
+    "test_name": "consensus_timeout",
+    "module": "consensus"
+  },
+  "expected": {
+    "completed_count": 1,
+    "ballot_state": {
+      "result": "Timeout",
+      "completed": true,
+      "yes_count": 2
+    }
+  },
+  "actual": {
+    "id": "consensus_005",
+    "module": "consensus",
+    "function": "consensus_tick",
+    "passed": false,
+    "error": "Consensus not initialized"
+  },
+  "passed": false
+}

@@ -1,0 +1,125 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ROJ Protocol Messages",
+  "description": "Message schemas for ROJ distributed consensus protocol",
+  "version": "0.1.0",
+
+  "definitions": {
+    "node_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "description": "Unique identifier for a ROJ node"
+    },
+    "language": {
+      "type": "string",
+      "enum": ["rust", "go", "c"],
+      "description": "Implementation language of the node"
+    },
+    "vote_type": {
+      "type": "string",
+      "enum": ["accept", "reject"],
+      "description": "Vote decision on a proposal"
+    },
+    "timestamp": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Unix timestamp in seconds"
+    }
+  },
+
+  "messages": {
+    "ANNOUNCE": {
+      "description": "Node presence announcement (heartbeat)",
+      "type": "object",
+      "required": ["type", "node_id", "lang", "capabilities", "version"],
+      "properties": {
+        "type": { "const": "ANNOUNCE" },
+        "node_id": { "$ref": "#/definitions/node_id" },
+        "lang": { "$ref": "#/definitions/language" },
+        "capabilities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of supported capabilities"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "Protocol version (semver)"
+        }
+      }
+    },
+
+    "PROPOSE": {
+      "description": "Initiate consensus on a key-value change",
+      "type": "object",
+      "required": ["type", "proposal_id", "from", "key", "value", "timestamp"],
+      "properties": {
+        "type": { "const": "PROPOSE" },
+        "proposal_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique identifier for this proposal"
+        },
+        "from": { "$ref": "#/definitions/node_id" },
+        "key": {
+          "type": "string",
+          "description": "State key being proposed"
+        },
+        "value": {
+          "description": "Value being proposed (any JSON value)"
+        },
+        "timestamp": { "$ref": "#/definitions/timestamp" }
+      }
+    },
+
+    "VOTE": {
+      "description": "Vote on a proposal",
+      "type": "object",
+      "required": ["type", "proposal_id", "from", "vote"],
+      "properties": {
+        "type": { "const": "VOTE" },
+        "proposal_id": {
+          "type": "string",
+          "description": "ID of the proposal being voted on"
+        },
+        "from": { "$ref": "#/definitions/node_id" },
+        "vote": { "$ref": "#/definitions/vote_type" }
+      }
+    },
+
+    "COMMIT": {
+      "description": "Finalize a proposal when threshold reached",
+      "type": "object",
+      "required": ["type", "proposal_id", "key", "value", "voters"],
+      "properties": {
+        "type": { "const": "COMMIT" },
+        "proposal_id": {
+          "type": "string",
+          "description": "ID of the committed proposal"
+        },
+        "key": {
+          "type": "string",
+          "description": "State key that was committed"
+        },
+        "value": {
+          "description": "Committed value"
+        },
+        "voters": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/node_id" },
+          "description": "List of nodes that voted accept"
+        }
+      }
+    }
+  },
+
+  "network": {
+    "mdns_service": "_roj._udp.local",
+    "udp_port": 9990,
+    "k_neighbors": 3,
+    "vote_threshold": 0.67,
+    "heartbeat_interval_ms": 1000
+  }
+}

@@ -1,0 +1,37 @@
+% Consensus Flow: State machine diagram
+\begin{tikzpicture}[
+    scale=0.85,
+    state/.style={draw, rounded corners, minimum width=2cm, minimum height=0.8cm, align=center},
+    arrow/.style={->, >=stealth, thick},
+    label/.style={font=\tiny, align=center}
+]
+
+% States
+\node[state, fill=green!20] (idle) at (0, 0) {IDLE};
+\node[state, fill=yellow!20] (propose) at (3.5, 0) {PROPOSE};
+\node[state, fill=orange!20] (vote) at (7, 0) {VOTING};
+\node[state, fill=blue!20] (commit) at (7, -2.5) {COMMIT};
+\node[state, fill=red!20] (abort) at (3.5, -2.5) {ABORT};
+\node[state, fill=gray!20] (timeout) at (0, -2.5) {TIMEOUT};
+
+% Transitions
+\draw[arrow] (idle) -- node[above, label] {proposal\\received} (propose);
+\draw[arrow] (propose) -- node[above, label] {broadcast\\vote} (vote);
+\draw[arrow] (vote) -- node[right, label] {threshold\\reached} (commit);
+\draw[arrow] (vote) -- node[above, label] {inhibited} (abort);
+\draw[arrow] (vote) -- node[left, label] {timeout} (timeout);
+\draw[arrow] (commit) -- node[below, label] {execute\\action} (idle);
+\draw[arrow] (abort) -- node[below, label] {reset} (idle);
+\draw[arrow] (timeout) -- node[left, label] {retry} (idle);
+
+% Thresholds annotation
+\node[draw, dashed, rounded corners, fill=white] at (10, -1) {
+\begin{tabular}{ll}
+\tiny\textbf{Thresholds:} & \\
+\tiny Safety: & \tiny 67\% \\
+\tiny Normal: & \tiny 50\% \\
+\tiny Local: & \tiny 0\% \\
+\end{tabular}
+};
+
+\end{tikzpicture}

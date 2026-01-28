@@ -1,0 +1,174 @@
+\section{Algorithm Design}
+\label{sec:algorithms}
+
+We present four CBS variants that address different aspects of the MD-MAPF problem: \mixedcbs{} for dimensional conflicts, \ecbs{} for energy constraints, \deadline{} for deadline awareness, and \hybridcbs{} for integrated planning-execution.
+
+\subsection{\mixedcbs{}: Dimensional Conflict Resolution}
+
+\mixedcbs{} extends CBS with dimension-aware conflict classification and specialized resolution strategies.
+
+\begin{algorithm}
+\caption{\mixedcbs{} Algorithm}
+\label{alg:mixedcbs}
+\begin{algorithmic}[1]
+\REQUIRE MD-MAPF instance $\mathcal{I}$
+\ENSURE Solution $\pi$ or \textsc{Failure}
+\STATE $\text{root} \leftarrow \text{compute\_initial\_assignment}(\mathcal{I})$
+\STATE $\text{root.paths} \leftarrow \text{plan\_all\_paths}(\text{root}, \mathcal{I})$
+\STATE $\text{OPEN} \leftarrow \{\text{root}\}$
+\WHILE{$\text{OPEN} \neq \emptyset$}
+    \STATE $N \leftarrow \text{extract\_min}(\text{OPEN})$
+    \STATE $\text{conflict} \leftarrow \text{find\_first\_conflict}(N.\text{paths})$
+    \IF{$\text{conflict} = \emptyset$}
+        \RETURN $N$ \COMMENT{Solution found}
+    \ENDIF
+    \STATE $\text{dim} \leftarrow \text{classify\_dimension}(\text{conflict})$
+    \STATE $\text{children} \leftarrow \text{resolve\_by\_dimension}(N, \text{conflict}, \text{dim})$
+    \FOR{each child in children}
+        \STATE $\text{child.paths} \leftarrow \text{replan\_affected}(\text{child}, \text{conflict.agents})$
+        \IF{$\text{child.paths} \neq \emptyset$}
+            \STATE $\text{OPEN} \leftarrow \text{OPEN} \cup \{\text{child}\}$
+        \ENDIF
+    \ENDFOR
+\ENDWHILE
+\RETURN \textsc{Failure}
+\end{algorithmic}
+\end{algorithm}
+
+The key innovation is the \texttt{resolve\_by\_dimension} function, which applies conflict-class-specific strategies:
+
+\textbf{Strategy $C_1$ (\textsc{Linear}):} For rail robot conflicts on segment $S$:
+\begin{equation}
+\text{resolve\_linear}(a_1, a_2, S, t) = \text{constrain}(a_{\text{trailing}}, \text{wait\_at\_junction}, t)
+\end{equation}
+Rail robots cannot pass on a segment; one must yield at a junction.
+
+\textbf{Strategy $C_2$ (\textsc{Planar}):} Standard CBS branching:
+\begin{equation}
+\text{resolve\_planar}(a_1, a_2, v, t) = \{\text{constrain}(a_1, v, t), \text{constrain}(a_2, v, t)\}
+\end{equation}
+
+\textbf{Strategy $C_3$ (\textsc{Crossing}):} Rail-mobile intersection with priority to rail (higher inertia):
+\begin{equation}
+\text{resolve\_crossing}(a_{\text{rail}}, a_{\text{mobile}}, v, t) = \{\text{constrain}(a_{\text{mobile}}, v, [t-\epsilon, t+\epsilon])\}
+\end{equation}
+
+\textbf{Strategy $C_4$ (\textsc{Aerial}):} Similar to planar but in 3D layer context.
+
+\textbf{Strategy $C_5$ (\textsc{Vertical}):} Corridor exclusivity forces sequentialization:
+\begin{equation}
+\text{resolve\_vertical}(a_1, a_2, C, t) = \text{constrain}(a_{\text{following}}, C, [t, t + \tau_{\text{traverse}}])
+\end{equation}
+
+\textbf{Strategy $C_6$ (\textsc{Air-Ground}):} Synchronization at handoff points with landing coordination.
+
+\subsection{\ecbs{}: Energy-Constrained CBS}
+
+\ecbs{} extends \mixedcbs{} with energy feasibility checking and automatic charging station waypoint insertion.
+
+\begin{algorithm}
+\caption{\ecbs{} Algorithm}
+\label{alg:ecbs}
+\begin{algorithmic}[1]
+\REQUIRE MD-MAPF instance $\mathcal{I}$ with energy parameters
+\ENSURE Energy-valid solution $\pi$ or \textsc{Failure}
+\STATE Initialize as \mixedcbs{}
+\WHILE{$\text{OPEN} \neq \emptyset$}
+    \STATE $N \leftarrow \text{extract\_min}(\text{OPEN})$
+    \STATE \textbf{// Energy validation before conflict detection}
+    \STATE $\epsilon \leftarrow \text{simulate\_energy}(N.\text{paths}, \mathcal{I})$
+    \IF{$\epsilon \neq \emptyset$}
+        \STATE $\text{children} \leftarrow \text{resolve\_energy\_violation}(N, \epsilon)$
+        \STATE Add valid children to OPEN
+        \STATE \textbf{continue}
+    \ENDIF
+    \STATE \textbf{// Standard conflict resolution}
+    \STATE $\text{conflict} \leftarrow \text{find\_first\_conflict}(N.\text{paths})$
+    \IF{$\text{conflict} = \emptyset$}
+        \RETURN $N$
+    \ENDIF
+    \STATE Resolve conflict as in \mixedcbs{}
+\ENDWHILE
+\RETURN \textsc{Failure}
+\end{algorithmic}
+\end{algorithm}
+
+\begin{definition}[Energy Violation]
+An energy violation is a triple $\epsilon = (a, t_{\text{depleted}}, v_{\text{depleted}})$ indicating agent $a$ will exhaust energy at time $t_{\text{depleted}}$ at position $v_{\text{depleted}}$.
+\end{definition}
+
+The resolution inserts a charging waypoint:
+\begin{align}
+\text{pad} &\leftarrow \text{find\_nearest\_charging\_pad}(v_{\text{depleted}}) \\
+t_{\text{reach}} &\leftarrow t_{\text{depleted}} - \text{safety\_margin} \\
+\text{goals}[a] &\leftarrow \text{insert\_waypoint}(\text{pad}, \text{before\_tasks})
+\end{align}
+
+\subsection{\deadline{}: Deadline-Aware CBS}
+
+\deadline{} introduces slack-based prioritization to ensure deadline feasibility.
+
+\begin{definition}[Slack-Weighted Cost]
+The CBS node cost function is modified:
+\begin{equation}
+\text{cost}(N) = \text{makespan}(N) + \alpha \sum_{t \in T} \max(0, -\text{slack}(t))
+\end{equation}
+where $\alpha$ penalizes deadline violations.
+\end{definition}
+
+The algorithm preferentially expands nodes where all tasks meet deadlines, using slack as a tiebreaker. When conflicts arise, the agent with less slack receives priority in constraint assignment.
+
+\subsection{\hybridcbs{}: Planning-Execution Integration}
+
+\hybridcbs{} combines global CBS planning with local potential field execution, enabling real-time adaptation while maintaining optimality guarantees.
+
+\begin{definition}[Potential Field]
+A potential field is a function $\Phi: V \rightarrow \mathbb{R}$:
+\begin{equation}
+\Phi(v) = \Phi_{\text{goal}}(v) - \Phi_{\text{repulsive}}(v) + \Phi_{\text{thermal}}(v)
+\end{equation}
+where:
+\begin{itemize}
+    \item $\Phi_{\text{goal}}(v)$: Attraction toward goal/task locations
+    \item $\Phi_{\text{repulsive}}(v)$: Repulsion from other agents
+    \item $\Phi_{\text{thermal}}(v)$: Repulsion from overheated zones
+\end{itemize}
+\end{definition}
+
+\begin{definition}[Modified A* Heuristic]
+The low-level A* heuristic incorporates the field:
+\begin{equation}
+h'(v) = h(v) - \lambda \cdot \Phi(v)
+\end{equation}
+where $\lambda \in [0, 1]$ controls field influence.
+\end{definition}
+
+\begin{definition}[Deviation Detection]
+Deviation of agent $a$ at time $t$ is:
+\begin{equation}
+\text{dev}(a, t) = \text{dist}(\text{actual\_pos}(a, t), \text{planned\_pos}(a, t))
+\end{equation}
+\end{definition}
+
+When $\text{dev}(a, t) > \theta_{\text{replan}}$, local replanning is triggered:
+\begin{equation}
+\text{local\_path} \leftarrow \text{field\_guided\_astar}(\text{actual\_pos}, \text{planned\_pos}(t + H))
+\end{equation}
+where $H$ is the planning horizon.
+
+\subsection{Slack-Field Mapping}
+
+The critical bridge between planning and execution maps deadline slack to the \ekkor{} field coordination mechanism:
+
+\begin{equation}
+\text{FIELD\_SLACK} = \text{clamp}\left(\frac{\text{slack}(t)}{\tau_{\text{normalize}}}, 0, 1\right)
+\end{equation}
+
+where $\tau_{\text{normalize}} = 100$ seconds provides normalization.
+
+The gradient of the slack field across neighbors indicates deadline pressure:
+\begin{equation}
+\nabla\text{FIELD\_SLACK} = \frac{1}{k}\sum_{j \in \mathcal{N}_k} (\text{slack}_j - \text{slack}_i)
+\end{equation}
+
+Negative gradient indicates neighbors have tighter deadlines, signaling the local module to offer assistance or yield resources.

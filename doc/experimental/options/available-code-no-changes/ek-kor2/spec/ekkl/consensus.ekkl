@@ -1,0 +1,226 @@
+// EKKL Consensus Module - Distributed Voting
+//
+// Implements threshold-based consensus for EK-KOR2.
+// Supports simple majority, supermajority, and unanimous voting.
+
+// ============================================================================
+// Ballot Structure
+// ============================================================================
+
+struct Ballot {
+    id: u16,
+    proposer: u8,
+    proposal_type: u8,
+    data: u32,
+    threshold: q16_16,
+    deadline: u64,
+    result: VoteResult,
+    yes_count: u8,
+    no_count: u8,
+    inhibit_count: u8,
+    total_voters: u8,
+}
+
+// ============================================================================
+// Proposal Types
+// ============================================================================
+
+const PROPOSAL_MODE_CHANGE: u8 = 1
+const PROPOSAL_CONFIG_UPDATE: u8 = 2
+const PROPOSAL_SHUTDOWN: u8 = 3
+const PROPOSAL_REFORM: u8 = 4
+
+// ============================================================================
+// Core Functions
+// ============================================================================
+
+// Create a new proposal ballot
+fn create_ballot(
+    ballot_id: u16,
+    proposer: u8,
+    proposal_type: u8,
+    data: u32,
+    threshold: q16_16,
+    now: u64
+) -> Ballot {
+    return Ballot {
+        id: ballot_id,
+        proposer: proposer,
+        proposal_type: proposal_type,
+        data: data,
+        threshold: threshold,
+        deadline: now + VOTE_TIMEOUT_US,
+        result: VoteResult::Pending,
+        yes_count: 0,
+        no_count: 0,
+        inhibit_count: 0,
+        total_voters: 0,
+    }
+}
+
+// Record a vote on a ballot
+fn record_vote(ballot: Ballot, vote: VoteValue) -> Ballot {
+    let result = Ballot {
+        id: ballot.id,
+        proposer: ballot.proposer,
+        proposal_type: ballot.proposal_type,
+        data: ballot.data,
+        threshold: ballot.threshold,
+        deadline: ballot.deadline,
+        result: ballot.result,
+        yes_count: ballot.yes_count,
+        no_count: ballot.no_count,
+        inhibit_count: ballot.inhibit_count,
+        total_voters: ballot.total_voters + 1,
+    }
+
+    match vote {
+        Yes => {
+            result.yes_count = ballot.yes_count + 1
+        },
+        No => {
+            result.no_count = ballot.no_count + 1
+        },
+        Inhibit => {
+            result.inhibit_count = ballot.inhibit_count + 1
+        },
+        Abstain => {
+            // No change to counts
+        },
+    }
+
+    return result
+}
+
+// Check if ballot has reached threshold
+fn check_threshold(ballot: Ballot) -> VoteResult {
+    // If any inhibit votes, ballot is cancelled
+    if ballot.inhibit_count > 0 {
+        return VoteResult::Cancelled
+    }
+
+    // Calculate yes ratio
+    if ballot.total_voters == 0 {
+        return VoteResult::Pending
+    }
+
+    let yes_ratio = ballot.yes_count as q16_16 / ballot.total_voters as q16_16
+
+    // Check if threshold reached
+    if yes_ratio >= ballot.threshold {
+        return VoteResult::Approved
+    }
+
+    // Check if rejection is certain (not enough voters left)
+    let remaining = K_NEIGHBORS - ballot.total_voters
+    let max_possible_yes = ballot.yes_count + remaining
+    let max_ratio = max_possible_yes as q16_16 / K_NEIGHBORS as q16_16
+
+    if max_ratio < ballot.threshold {
+        return VoteResult::Rejected
+    }
+
+    return VoteResult::Pending
+}
+
+// Check if ballot has timed out
+fn check_timeout(ballot: Ballot, now: u64) -> VoteResult {
+    if now >= ballot.deadline {
+        // Timed out - check final state
+        if ballot.yes_count as q16_16 / ballot.total_voters as q16_16 >= ballot.threshold {
+            return VoteResult::Approved
+        } else {
+            return VoteResult::Timeout
+        }
+    }
+    return ballot.result
+}
+
+// Update ballot result based on current state
+fn update_ballot(ballot: Ballot, now: u64) -> Ballot {
+    let result = Ballot {
+        id: ballot.id,
+        proposer: ballot.proposer,
+        proposal_type: ballot.proposal_type,
+        data: ballot.data,
+        threshold: ballot.threshold,
+        deadline: ballot.deadline,
+        result: ballot.result,
+        yes_count: ballot.yes_count,
+        no_count: ballot.no_count,
+        inhibit_count: ballot.inhibit_count,
+        total_voters: ballot.total_voters,
+    }
+
+    // Check for timeout first
+    if now >= ballot.deadline {
+        result.result = check_timeout(ballot, now)
+    } else {
+        // Check threshold
+        result.result = check_threshold(ballot)
+    }
+
+    return result
+}
+
+// ============================================================================
+// Threshold Helpers
+// ============================================================================
+
+// Check if a threshold value is valid (0 < threshold <= 1)
+fn is_valid_threshold(threshold: q16_16) -> bool {
+    return threshold > 0.0q && threshold <= 1.0q
+}
+
+// Get threshold for a specific proposal type
+fn get_default_threshold(proposal_type: u8) -> q16_16 {
+    if proposal_type == PROPOSAL_SHUTDOWN {
+        return UNANIMOUS
+    } else if proposal_type == PROPOSAL_REFORM {
+        return SUPERMAJORITY
+    } else {
+        return SIMPLE_MAJORITY
+    }
+}
+
+// ============================================================================
+// Vote Decision Logic
+// ============================================================================
+
+// Decide vote based on local state and proposal
+// This is a simple example - real logic would be more complex
+fn decide_vote(
+    my_state: ModuleState,
+    proposal_type: u8,
+    proposal_data: u32
+) -> VoteValue {
+    // Isolated modules always abstain
+    if my_state == ModuleState::Isolated {
+        return VoteValue::Abstain
+    }
+
+    // Shutdown proposals during initialization get inhibited
+    if my_state == ModuleState::Init && proposal_type == PROPOSAL_SHUTDOWN {
+        return VoteValue::Inhibit
+    }
+
+    // Default: vote yes
+    return VoteValue::Yes
+}
+
+// ============================================================================
+// Quorum Calculation
+// ============================================================================
+
+// Calculate minimum votes needed for threshold
+fn min_votes_for_threshold(total_voters: u8, threshold: q16_16) -> u8 {
+    let threshold_votes = threshold * total_voters as q16_16
+    return q16_ceil(threshold_votes) as u8
+}
+
+// Check if quorum is possible with current alive neighbors
+fn is_quorum_possible(alive_count: u8, threshold: q16_16) -> bool {
+    // Need at least threshold * K_NEIGHBORS to have a chance
+    let min_needed = min_votes_for_threshold(K_NEIGHBORS, threshold)
+    return alive_count >= min_needed
+}

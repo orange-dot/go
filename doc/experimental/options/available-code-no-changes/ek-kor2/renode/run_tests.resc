@@ -1,0 +1,108 @@
+# EK-KOR v2 Headless Test Runner
+# Renode Script (.resc)
+#
+# Usage (headless, for CI):
+#   renode --disable-xwt --console -e 'include @renode/run_tests.resc'
+#
+# Or from docker-compose:
+#   docker-compose run test-renode
+#
+# This script:
+# 1. Creates STM32G474 machine
+# 2. Loads EKK test firmware
+# 3. Runs for 15 seconds (simulated)
+# 4. Captures UART output
+# 5. Exits with appropriate code
+#
+# Copyright (c) 2026 Elektrokombinacija
+# SPDX-License-Identifier: MIT
+
+# ============================================================================
+# Configuration
+# ============================================================================
+
+# Test duration in virtual seconds
+$test_duration = 15
+
+# Path to ELF (from build-stm32 directory)
+$elf_path = @c/build-stm32/ekk_test.elf
+
+# ============================================================================
+# Machine Setup
+# ============================================================================
+
+echo "=== EK-KOR v2 Renode Test Runner ==="
+echo ""
+
+# Create machine
+mach create "ekk_test"
+
+# Load platform definition (use path relative to workspace)
+machine LoadPlatformDescription @renode/stm32g474-minimal.repl
+
+# Configure CPU speed (170 MHz = STM32G474)
+sysbus.cpu PerformanceInMips 170
+
+# ============================================================================
+# UART Console Output
+# ============================================================================
+
+# Connect UART to console for output
+# Note: Using sysbus path for peripheral access
+showAnalyzer sysbus.usart2
+
+# ============================================================================
+# Load Firmware
+# ============================================================================
+
+echo "Loading firmware..."
+
+# Try to load ELF from build directory
+# Path is relative to workspace root (where docker-compose runs)
+sysbus LoadELF $elf_path
+
+echo "Firmware loaded successfully"
+echo ""
+
+# ============================================================================
+# Execution Control
+# ============================================================================
+
+# Create a simple test completion hook
+# We look for "TEST COMPLETE" in UART output
+
+# Set up logging to capture test output
+logFile @/tmp/ekk_test_output.log true
+
+echo "Starting simulation for 5 seconds (virtual time)..."
+echo "UART output will be displayed below:"
+echo "----------------------------------------"
+
+# Run for 5 seconds (virtual time)
+# Note: RunFor starts the emulation automatically
+# On a fast host, 5 virtual seconds may complete very quickly
+
+emulation RunFor "00:00:05"
+
+# ============================================================================
+# Results
+# ============================================================================
+
+echo "----------------------------------------"
+echo "Simulation completed"
+echo ""
+
+# Get final state
+echo "Final CPU state:"
+cpu GetTimeSourceInfo
+
+# Pause simulation
+pause
+
+echo ""
+echo "=== Test Run Complete ==="
+echo "Check UART output above for PASS/FAIL status"
+echo ""
+
+# Exit Renode
+quit

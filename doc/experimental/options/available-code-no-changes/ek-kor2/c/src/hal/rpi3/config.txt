@@ -1,0 +1,17 @@
+# EK-KOR v2 for Raspberry Pi 3B+
+# Boot configuration
+
+# Use 64-bit mode (AArch64)
+arm_64bit=1
+
+# Enable mini-UART on GPIO 14/15
+enable_uart=1
+
+# Our kernel image
+kernel=kernel8.img
+
+# Disable Bluetooth to free mini-UART
+dtoverlay=disable-bt
+
+# Optional: disable splash screen for faster boot
+disable_splash=1

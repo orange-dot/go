@@ -1,0 +1,194 @@
+// EKKL Prelude - Common types and constants for EK-KOR2
+//
+// This file defines the foundational types and constants used across
+// all EKK modules. It matches the definitions in ekk::types.
+
+// ============================================================================
+// Configuration Constants
+// ============================================================================
+
+// Number of topological neighbors per module (k=7 based on Cavagna & Giardina 2010)
+const K_NEIGHBORS: u8 = 7
+
+// Maximum modules in a cluster
+const MAX_MODULES: u16 = 256
+
+// Maximum tasks per module
+const MAX_TASKS_PER_MODULE: u8 = 8
+
+// Field decay time constant in microseconds (100ms default)
+const FIELD_DECAY_TAU_US: u64 = 100000
+
+// Heartbeat period in microseconds (10ms default)
+const HEARTBEAT_PERIOD_US: u64 = 10000
+
+// Heartbeat timeout count (5 missed = 50ms at 10ms period)
+const HEARTBEAT_TIMEOUT_COUNT: u8 = 5
+
+// Vote timeout in microseconds (50ms default)
+const VOTE_TIMEOUT_US: u64 = 50000
+
+// Maximum concurrent ballots
+const MAX_BALLOTS: u8 = 4
+
+// Maximum field components
+const FIELD_COUNT: u8 = 5
+
+// Invalid module ID constant
+const INVALID_MODULE_ID: u8 = 0
+
+// Invalid ballot ID constant
+const INVALID_BALLOT_ID: u16 = 0
+
+// Broadcast address
+const BROADCAST_ID: u8 = 255
+
+// ============================================================================
+// Threshold Constants (Q16.16 fixed-point)
+// ============================================================================
+
+// Simple majority (50%) = 0x8000 = 32768
+const SIMPLE_MAJORITY: q16_16 = 0.5q
+
+// Supermajority (67%) = 0xAB85 ≈ 43909
+const SUPERMAJORITY: q16_16 = 0.67q
+
+// Unanimous (100%) = 0x10000 = 65536
+const UNANIMOUS: q16_16 = 1.0q
+
+// ============================================================================
+// Error Enum
+// ============================================================================
+
+enum Error {
+    Ok,
+    InvalidArg,
+    NotFound,
+    NoMemory,
+    Timeout,
+    Busy,
+    AlreadyExists,
+    NoQuorum,
+    Inhibited,
+    FieldExpired,
+    NeighborLost,
+    HalFailure,
+}
+
+// ============================================================================
+// Health State Enum
+// ============================================================================
+
+enum HealthState {
+    Unknown,
+    Alive,
+    Suspect,
+    Dead,
+}
+
+// ============================================================================
+// Vote Enums
+// ============================================================================
+
+enum VoteValue {
+    Abstain,
+    Yes,
+    No,
+    Inhibit,
+}
+
+enum VoteResult {
+    Pending,
+    Approved,
+    Rejected,
+    Timeout,
+    Cancelled,
+}
+
+// ============================================================================
+// Module State Enum
+// ============================================================================
+
+enum ModuleState {
+    Init,
+    Discovering,
+    Active,
+    Degraded,
+    Isolated,
+    Reforming,
+    Shutdown,
+}
+
+// ============================================================================
+// Field Component Enum
+// ============================================================================
+
+enum FieldComponent {
+    Load,
+    Thermal,
+    Power,
+    Custom0,
+    Custom1,
+}
+
+// ============================================================================
+// Decay Model Enum
+// ============================================================================
+
+enum DecayModel {
+    Exponential,
+    Linear,
+    Step,
+}
+
+// ============================================================================
+// Structs
+// ============================================================================
+
+// Coordination field published by each module
+struct Field {
+    components: [q16_16; 5],
+    timestamp: u64,
+    source: u8,
+    sequence: u8,
+}
+
+// 3D position for physical distance calculation
+struct Position {
+    x: i16,
+    y: i16,
+    z: i16,
+}
+
+// Information about a neighbor module
+struct Neighbor {
+    id: u8,
+    health: HealthState,
+    last_seen: u64,
+    last_field: Field,
+    logical_distance: i32,
+    missed_heartbeats: u8,
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+// Check if a module ID is valid
+fn is_valid_module_id(id: u8) -> bool {
+    return id != INVALID_MODULE_ID
+}
+
+// Check if a health state indicates the neighbor is reachable
+fn is_healthy(state: HealthState) -> bool {
+    match state {
+        Alive => true,
+        Suspect => true,
+        _ => false,
+    }
+}
+
+// Clamp a fixed-point value to [0, 1]
+fn clamp_unit(v: q16_16) -> q16_16 {
+    return q16_clamp(v, 0.0q, 1.0q)
+}

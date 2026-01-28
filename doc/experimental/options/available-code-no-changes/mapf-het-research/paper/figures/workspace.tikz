@@ -1,0 +1,59 @@
+% MD-MAPF Workspace: 1D rails, 2D floor, 3D airspace
+\begin{tikzpicture}[
+    scale=0.8,
+    rail/.style={very thick, brown},
+    floor/.style={fill=gray!20},
+    airspace/.style={fill=blue!5, draw=blue!30, dashed},
+    agent1d/.style={fill=brown!60, circle, minimum size=0.4cm},
+    agent2d/.style={fill=green!60, circle, minimum size=0.4cm},
+    agent3d/.style={fill=blue!60, circle, minimum size=0.3cm}
+]
+
+% Floor (2D layer)
+\fill[floor] (0,0) rectangle (8,6);
+\node at (0.5, 0.3) {\tiny 2D Floor};
+
+% Rails (1D)
+\draw[rail] (1, 1) -- (7, 1);
+\draw[rail] (1, 5) -- (7, 5);
+\draw[rail] (2, 1) -- (2, 5);
+\draw[rail] (6, 1) -- (6, 5);
+\node at (0.5, 1) {\tiny 1D Rail};
+
+% Airspace layers
+\begin{scope}[yshift=6.5cm]
+    \fill[airspace] (0, 0) rectangle (8, 0.8);
+    \node[right] at (8, 0.4) {\tiny $\lambda_1$ (5m)};
+    \fill[airspace] (0, 1) rectangle (8, 1.8);
+    \node[right] at (8, 1.4) {\tiny $\lambda_2$ (10m)};
+    \fill[airspace] (0, 2) rectangle (8, 2.8);
+    \node[right] at (8, 2.4) {\tiny $\lambda_3$ (15m)};
+\end{scope}
+
+% Vertical corridors
+\draw[dashed, blue] (3, 6) -- (3, 9.3);
+\draw[dashed, blue] (5, 6) -- (5, 9.3);
+\node at (3, 9.5) {\tiny Corridor};
+
+% Agents
+\node[agent1d] (r1) at (3, 1) {};
+\node[agent1d] (r2) at (4, 5) {};
+\node[agent2d] (m1) at (4, 3) {};
+\node[agent2d] (m2) at (5.5, 2.5) {};
+\node[agent3d] (d1) at (3, 7.9) {};
+\node[agent3d] (d2) at (5, 8.9) {};
+
+% Labels
+\node[below] at (r1) {\tiny Rail};
+\node[right] at (m1) {\tiny Mobile};
+\node[left] at (d1) {\tiny Drone};
+
+% Handoff point
+\fill[red!30] (3, 5) circle (0.3);
+\node[above right] at (3.2, 5) {\tiny Handoff};
+
+% Charging pad
+\fill[yellow!50] (6.5, 2) rectangle (7.5, 3);
+\node at (7, 2.5) {\tiny Pad};
+
+\end{tikzpicture}

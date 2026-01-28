@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "vector_file": "field_002_publish_invalid_id.json",
+    "captured_from": "rust",
+    "captured_at": "2026-01-21T02:32:58.268930Z",
+    "test_id": "field_002",
+    "test_name": "field_publish_invalid_id",
+    "module": "field"
+  },
+  "expected": {
+    "return": "InvalidArg"
+  },
+  "actual": {
+    "id": "field_002",
+    "module": "field",
+    "function": "field_publish",
+    "passed": true
+  },
+  "passed": true
+}

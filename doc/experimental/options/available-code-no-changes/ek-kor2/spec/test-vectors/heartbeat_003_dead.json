@@ -1,0 +1,34 @@
+{
+  "id": "heartbeat_003",
+  "name": "heartbeat_dead",
+  "module": "heartbeat",
+  "function": "heartbeat_tick",
+  "description": "Neighbor declared dead after timeout",
+
+  "setup": {
+    "init": {"my_id": 1},
+    "add_neighbor": {"neighbor_id": 2},
+    "received": {"sender_id": 2, "sequence": 1, "now": 1000000}
+  },
+
+  "input": {
+    "now": 1060000
+  },
+
+  "expected": {
+    "state_changes": 1,
+    "neighbor_state": {
+      "id": 2,
+      "health": "Dead",
+      "missed_count": 5
+    }
+  },
+
+  "notes": [
+    "Heartbeat period = 10000us (10ms)",
+    "Timeout = 5 periods = 50ms",
+    "Elapsed = 60000us = 60ms > 50ms",
+    "Neighbor declared Dead",
+    "on_dead callback should be invoked"
+  ]
+}

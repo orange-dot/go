@@ -1,0 +1,53 @@
+\section{Related Work}
+\label{sec:related}
+
+We survey four areas: MAPF formulations for heterogeneous agents, conflict classification in CBS, energy-aware planning, and distributed coordination systems.
+
+\subsection{Multi-Agent Path Finding}
+
+The foundational CBS algorithm~\cite{sharon2015cbs} introduced two-level search: high-level conflict detection and low-level single-agent planning. Subsequent work improved efficiency through enhanced heuristics (CBSH~\cite{felner2018cbsh}), improved conflict classification (ICBS~\cite{boyarski2015icbs}), and continuous-time extensions (CCBS~\cite{andreychuk2022ccbs}).
+
+\textbf{Heterogeneous MAPF:} G-MAPF~\cite{atzmon2020gmapf} generalizes agent representation with state-based transition functions but assumes all agents operate on the same graph structure. LA-MAPF~\cite{li2019lamapf} handles geometric agents with varying footprints but not dimensional restrictions. Multi-Train Path Finding~\cite{atzmon2019trains} addresses 1D rail networks in isolation. The Flatland Challenge~\cite{li2021flatland} demonstrated scalable rail planning but without integration with 2D/3D agents.
+
+\textbf{Gap:} No existing work models agents operating in fundamentally different dimensional spaces (1D rail, 2D ground, 3D aerial) within a unified MAPF formulation. MD-MAPF introduces the dimensionality function $\kappa(a) \rightarrow \{1,2,3\}$ and vertex compatibility function $\delta(v)$ to address this gap.
+
+\subsection{Conflict Classification}
+
+Conflict classification in MAPF literature follows three approaches:
+\begin{itemize}
+    \item \textbf{Basic:} CBS~\cite{sharon2015cbs} defines only vertex and edge conflicts without structural distinction
+    \item \textbf{Cost-Based:} ICBS~\cite{boyarski2015icbs} introduced cardinal/semi-cardinal/non-cardinal classification based on cost impact using MDDs
+    \item \textbf{Pattern-Based:} Pairwise symmetry reasoning~\cite{li2021symmetry} recognizes corridor, rectangle, and target symmetry patterns, achieving up to 4 orders of magnitude runtime improvement
+\end{itemize}
+
+Our six-class taxonomy (LINEAR, PLANAR, CROSSING, AERIAL, VERTICAL, AIR-GROUND) uses a fundamentally different classification principle based on dimensional interaction. The CROSSING, VERTICAL, and AIR-GROUND classes have no prior treatment in the literature.
+
+\subsection{Energy-Aware Planning}
+
+Energy constraints are well-studied in vehicle routing. NRHF-MAPF~\cite{scott2024nrhf} extends CBS for hybrid-fuel UAVs with battery and noise restrictions but does not include automatic charging waypoint insertion. MO-CBS~\cite{ren2021mocbs} treats energy as an optimization objective rather than a hard constraint. The Electric Vehicle Routing Problem literature (EVRPTW~\cite{schneider2014evrptw}) provides mature charging integration but operates in VRP frameworks without collision avoidance.
+
+\textbf{Gap:} E-CBS differs from prior work by treating battery constraints as hard limits, performing automatic charging station waypoint insertion during conflict resolution, and using action-specific energy models (hover/move/climb/descend) unified within CBS.
+
+\subsection{Airspace Management}
+
+Labib et al.~\cite{labib2019airspace} present a multilayer low-altitude airspace model dividing Class G airspace into horizontal layers with inter-layer transitions. The METROPOLIS project~\cite{sunil2015metropolis} tested layers segmented by travel direction. UTM/U-space frameworks~\cite{nasa2020utm,faa2023uam} provide operational concepts but leave internal layering to implementation.
+
+Our model adds: (1) functional layer naming with operational semantics (ground/handoff/work/transit), (2) exclusive vertical corridors as the only transition points, and (3) MAPF integration for collision-free path planning within the layered structure.
+
+\subsection{Distributed Coordination}
+
+Collective behavior research provides theoretical foundation for our coordination approach. Cavagna et al.~\cite{cavagna2010scale} demonstrated that starling flocks maintain scale-free correlations through topological (not metric) neighbor interaction with $k \approx 6$-7 neighbors.
+
+Potential field methods originated in robotics~\cite{khatib1986potential} for obstacle avoidance. We adapt these to temporal scheduling, where task deadlines create attractive potentials and resource contention creates repulsive fields.
+
+Distributed consensus protocols (Paxos~\cite{lamport1998paxos}, Raft~\cite{ongaro2014raft}) provide foundations for our threshold consensus, adapted for embedded systems with Byzantine fault tolerance and density-dependent activation.
+
+Real-time scheduling theory~\cite{sha1990priority,buttazzo2011real} informs our deadline handling, though we replace priority inheritance with field-mediated coordination for improved scalability.
+
+\subsection{Commercial Systems}
+
+Amazon Robotics coordinates heterogeneous fleets (Proteus, Titan, Hercules, Sequoia, Cardinal) through their DeepFleet system managing over 1 million robots. Geek+ and Locus Robotics support mixed navigation types through unified management platforms.
+
+These systems differ from our approach: they use heuristic methods without formal optimality guarantees, handle heterogeneity through separate planning modules rather than unified formulations, and don't address the 1D/2D/3D dimensional distinctions central to MD-MAPF.
+
+Ocado Technology demonstrates automated battery swap (sub-one-minute hot swaps, 12-minute charge cycles, 7\%+ increased utilization) within their proprietary grid system, validating commercial viability of energy-aware automation.

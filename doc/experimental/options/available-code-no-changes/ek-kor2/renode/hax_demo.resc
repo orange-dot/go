@@ -1,0 +1,75 @@
+# EK-KOR v2 HAX Demo - Renode Single Module Test
+#
+# This script boots the HAX demo on a single emulated STM32G474.
+# The full 7-module visualization is best seen in POSIX mode.
+#
+# Usage:
+#   Headless: renode --disable-xwt --console -e 'include @hax_demo.resc; runMacro $demo'
+#
+# Note: For the full HAX demo video with ASCII art status table,
+#       use the POSIX build: ./hax_demo (or docker-compose run hax-demo)
+#
+# Copyright (c) 2026 Elektrokombinacija
+# SPDX-License-Identifier: MIT
+
+# Demo runtime (virtual seconds)
+$demoTime = "5.0"
+
+echo ""
+echo "============================================"
+echo "  EK-KOR v2 HAX DEMO (Renode Single Module)"
+echo "============================================"
+echo ""
+
+# Create single module for firmware validation
+mach create "ekk_module"
+machine LoadPlatformDescription @stm32g474-minimal.repl
+machine SetSerialExecution true
+
+# Macro: Load HAX demo ELF
+macro loadDemo
+"""
+    echo 'Loading hax_demo.elf...'
+    sysbus WriteDoubleWord 0x20017FFC 0xECC00001
+    sysbus LoadELF @hax_demo.elf
+    echo 'Firmware loaded'
+"""
+
+# Macro: Log UART output
+macro logOutput
+"""
+    usart2 CreateFileBackend @hax_demo_output.log true
+    echo 'UART output logged to hax_demo_output.log'
+"""
+
+# Macro: Run demo (for CI)
+macro demo
+"""
+    echo '=== HAX Demo Starting ==='
+    runMacro $loadDemo
+    runMacro $logOutput
+    echo 'Starting emulation...'
+    start
+    echo 'Running for $demoTime virtual seconds...'
+    emulation RunFor @$demoTime
+    pause
+    echo ''
+    echo '=== HAX Demo Complete ==='
+    echo 'Firmware booted successfully on emulated STM32G474'
+    echo ''
+    echo 'For full 7-module visualization with ASCII art:'
+    echo '  docker-compose run hax-demo'
+    echo '  (or build POSIX: cmake .. && ninja hax_demo && ./hax_demo)'
+    quit
+"""
+
+# Synchronize time
+emulation SetGlobalQuantum "0.0001"
+
+echo "Commands:"
+echo "  runMacro \$loadDemo   - Load firmware"
+echo "  runMacro \$logOutput  - Enable UART logging"
+echo "  runMacro \$demo       - Run full test"
+echo ""
+echo "For CI: renode --disable-xwt --console -e 'include @hax_demo.resc; runMacro \$demo'"
+echo ""

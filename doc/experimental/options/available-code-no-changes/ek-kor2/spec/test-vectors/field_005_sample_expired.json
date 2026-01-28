@@ -1,0 +1,32 @@
+{
+  "id": "field_005",
+  "name": "field_sample_expired",
+  "module": "field",
+  "function": "field_sample",
+  "description": "Reject sampling expired field (elapsed > 5*tau)",
+
+  "setup": {
+    "publish": {
+      "module_id": 42,
+      "field": {
+        "load": 1.0
+      },
+      "timestamp": 1000000
+    }
+  },
+
+  "input": {
+    "target_id": 42,
+    "now": 1600000
+  },
+
+  "expected": {
+    "return": "FieldExpired"
+  },
+
+  "notes": [
+    "Elapsed = 600000us = 600ms = 6*tau",
+    "Field is considered expired after 5*tau = 500ms",
+    "Should return error, not decayed value"
+  ]
+}
