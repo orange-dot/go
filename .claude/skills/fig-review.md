@@ -267,7 +267,7 @@ Review figures, tables, and visual elements for quality. Essential for publicati
 ## Example
 
 ```
-/fig-review tehnika/inzenjersko/en/SPECIFICATIONS.md
-/fig-review patent/03-TECHNICAL-SUPPORT/EK3-DETAILED-DESIGN.md
+/fig-review docs/specifications.md
+/fig-review docs/technical-design.md
 /fig-review --format=IEEE paper-draft.md
 ```

@@ -198,9 +198,9 @@ For patent applications, document:
 
 ```
 1. /prior-art "invention description"     # Find prior art
-2. /claim-verify invention-disclosure.md  # Verify claims
-3. /patent-draft                          # Draft application
-4. /cite-check patent-draft.md            # Verify citations
+2. /claim-verify docs/invention-disclosure.md  # Verify claims
+3. /paper-structure --format=patent docs/patent-draft.md  # Structure the application
+4. /cite-check docs/patent-draft.md      # Verify citations
 ```
 
 ## Example

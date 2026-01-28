@@ -203,13 +203,13 @@ Based on document analysis, recommended standard terms:
 ```
 1. /term-check document.md           # Find inconsistencies
 2. /rigor-fix document.md            # Auto-fix simple cases
-3. /translate-sr document.md         # Translation needs consistent source
+3. /xref-check document.md           # Verify references after edits
 ```
 
 ## Example
 
 ```
-/term-check tehnika/inzenjersko/en/SPECIFICATIONS.md
-/term-check patent/01-IP-FOUNDATION/
+/term-check docs/specifications.md
+/term-check docs/patent/
 /term-check --glossary project-glossary.md document.md
 ```

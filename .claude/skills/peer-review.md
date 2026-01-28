@@ -186,7 +186,7 @@ This skill operates in **STRICT** mode:
 ## Example
 
 ```
-/peer-review tehnika/konceptualno/en/00-arhitektura.md
-/peer-review patent/01-IP-FOUNDATION/01-01-invention-disclosure-modular.md
-/peer-review strict research/paper-draft.md
+/peer-review docs/architecture.md
+/peer-review docs/invention-disclosure.md
+/peer-review strict docs/paper-draft.md
 ```

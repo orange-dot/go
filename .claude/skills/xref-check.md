@@ -248,7 +248,7 @@ Validate cross-references within documents. Catches broken links and missing tar
 ## Example
 
 ```
-/xref-check tehnika/inzenjersko/en/SPECIFICATIONS.md
+/xref-check docs/specifications.md
 /xref-check --style=IEEE paper-draft.md
-/xref-check patent/03-TECHNICAL-SUPPORT/EK3-DETAILED-DESIGN.md
+/xref-check docs/technical-design.md
 ```

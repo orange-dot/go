@@ -157,6 +157,6 @@ This skill operates in **STRICT** mode:
 ## Example
 
 ```
-/method-check tehnika/inzenjersko/en/thermal-test-report.md
-/method-check research/simulation-results.md
+/method-check docs/thermal-test-report.md
+/method-check docs/simulation-results.md
 ```

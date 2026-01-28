@@ -135,6 +135,6 @@ This skill operates in **STRICT** mode:
 ## Example
 
 ```
-/calc-verify tehnika/inzenjersko/en/SPECIFICATIONS.md
-/calc-verify patent/03-TECHNICAL-SUPPORT/EK3-DETAILED-DESIGN.md
+/calc-verify docs/specifications.md
+/calc-verify docs/technical-design.md
 ```

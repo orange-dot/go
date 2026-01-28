@@ -27,15 +27,18 @@ GODEBUG=scheddetail=1 ./program       # detailed scheduler info
 
 ### Memory
 ```bash
-GODEBUG=allocfreetrace=1 ./program    # trace every alloc/free (very verbose)
+GODEBUG=scavtrace=1 ./program         # trace scavenger activity
+GODEBUG=memprofilerate=1 ./program    # high-resolution heap profiling (very verbose)
 GODEBUG=inittrace=1 ./program         # package init timing
 ```
 
 ### Debugging
 ```bash
 GODEBUG=asyncpreemptoff=1 ./program   # disable async preemption
-GODEBUG=cgocheck=2 ./program          # strict cgo pointer checks
+GODEBUG=cgocheck=1 ./program          # cgo pointer checks (default)
 ```
+
+For stricter cgo checking, build with `GOEXPERIMENT=cgocheck2`.
 
 ## GC Trace Output Format
 

@@ -138,6 +138,6 @@ This skill operates in **STRICT** mode:
 ## Example
 
 ```
-/units-check tehnika/inzenjersko/en/SPECIFICATIONS.md
-/units-check patent/03-TECHNICAL-SUPPORT/EK3-DETAILED-DESIGN.md
+/units-check docs/specifications.md
+/units-check docs/technical-design.md
 ```

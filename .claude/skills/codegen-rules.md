@@ -69,7 +69,7 @@ GOSSAFUNC=MyFunc go build -gcflags='-d=ssa/opt/debug=2'
 
 ## Output Format
 
-```
+````markdown
 ## Rule Analysis
 
 ## Existing Rules for <pattern>
@@ -99,7 +99,7 @@ func testCase() {
 
 ## Potential Conflicts
 - <any rules that might interact>
-```
+````
 
 ## Common Patterns
 

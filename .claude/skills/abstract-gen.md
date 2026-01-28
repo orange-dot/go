@@ -176,7 +176,7 @@ For USPTO:
 ```markdown
 ### Patent Abstract
 A modular power conversion system for electric vehicle charging
-comprising stackable 3.3 kW modules (10). Each module includes
+with stackable 3.3 kW modules (10). Each module includes
 a bidirectional DC-DC converter (12) with silicon carbide
 switching devices (14) and an integrated thermal management
 system (16). Modules communicate via CAN-FD bus (18) for
@@ -198,7 +198,7 @@ field replacement without system shutdown. [Fig. 1]
 ## Example
 
 ```
-/abstract-gen tehnika/konceptualno/en/00-arhitektura.md
-/abstract-gen patent/01-IP-FOUNDATION/01-01-invention-disclosure-modular.md
+/abstract-gen docs/architecture.md
+/abstract-gen docs/invention-disclosure.md
 /abstract-gen --type=conference --length=150 paper.md
 ```

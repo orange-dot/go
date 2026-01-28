@@ -32,9 +32,9 @@ git checkout -b my-feature master
 
 ### 2. Make Changes
 - Edit files
-- Run tests: `go test ./...`
-- Run vet: `go vet ./...`
-- Format: `gofmt -w .`
+- Run tests: `go test <affected packages>`
+- Run vet: `go vet <affected packages>`
+- Format: `gofmt -w <files>`
 
 ### 3. Create Change
 ```bash
@@ -105,8 +105,8 @@ encoding/json: This commit adds a new feature  # not imperative
 ### Code Quality
 - [ ] `go build ./...` passes
 - [ ] `go test <affected packages>` passes
-- [ ] `go vet ./...` passes
-- [ ] `gofmt -w .` applied
+- [ ] `go vet <affected packages>` passes
+- [ ] `gofmt -w <files>` applied
 
 ### For Compiler Changes
 - [ ] `go test cmd/internal/testdir` passes
@@ -136,7 +136,7 @@ encoding/json: This commit adds a new feature  # not imperative
 
 ## Output Format
 
-```
+````markdown
 ## Gerrit Preparation
 
 ## Change Summary
@@ -162,7 +162,7 @@ encoding/json: This commit adds a new feature  # not imperative
 
 ## Remaining Items
 - [ ] <any remaining work>
-```
+````
 
 ## Gerrit Web Interface
 

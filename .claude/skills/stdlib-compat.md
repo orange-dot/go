@@ -52,7 +52,7 @@ pkg encoding/json, method (*Decoder) DisallowUnknownFields2()
 
 ## Output Format
 
-```
+````markdown
 ## API Compatibility Check
 
 ## Package: <package>
@@ -81,7 +81,7 @@ pkg <package>, func NewFunc() error
 - [ ] Error types implement error interface
 - [ ] Interfaces minimal (Go proverb)
 - [ ] Follows existing package conventions
-```
+````
 
 ## Go Compatibility Promise
 
@@ -97,7 +97,7 @@ From https://go.dev/doc/go1compat:
 - Add new packages
 - Add new functions/methods
 - Add new types
-- Add optional struct fields (with zero-value default)
+- Add new exported constants/variables
 - Add methods to concrete types
 
 ## What You CANNOT Do
@@ -105,6 +105,7 @@ From https://go.dev/doc/go1compat:
 - Remove anything public
 - Change signatures
 - Add methods to interfaces
+- Add fields to exported structs (breaks unkeyed literals)
 - Change behavior in breaking ways
 
 ## Internal Packages

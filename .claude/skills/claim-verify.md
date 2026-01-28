@@ -100,6 +100,6 @@ This skill operates in **STRICT** mode:
 ## Example
 
 ```
-/claim-verify tehnika/inzenjersko/en/SPECIFICATIONS.md
-/claim-verify patent/01-IP-FOUNDATION/01-01-invention-disclosure-modular.md
+/claim-verify docs/specifications.md
+/claim-verify docs/invention-disclosure.md
 ```

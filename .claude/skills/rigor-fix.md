@@ -173,7 +173,7 @@ After fixes applied:
 ## Example
 
 ```
-/rigor-fix tehnika/inzenjersko/en/SPECIFICATIONS.md
-/rigor-fix aggressive patent/01-IP-FOUNDATION/
-/rigor-fix preview research/paper-draft.md
+/rigor-fix docs/specifications.md
+/rigor-fix aggressive docs/patent/
+/rigor-fix preview docs/paper-draft.md
 ```

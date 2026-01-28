@@ -176,6 +176,6 @@ This skill operates in **STRICT** mode:
 
 ```
 /reproduce-check web/
-/reproduce-check research/simulation-study/
+/reproduce-check docs/simulation-study/
 /reproduce-check firmware/ek3-controller/
 ```

@@ -226,7 +226,7 @@ This skill operates in **STRICT** mode:
 ## Example
 
 ```
-/rigor-audit tehnika/inzenjersko/en/SPECIFICATIONS.md
-/rigor-audit full patent/01-IP-FOUNDATION/
-/rigor-audit quick research/preliminary-results.md
+/rigor-audit docs/specifications.md
+/rigor-audit full docs/patent/
+/rigor-audit quick docs/preliminary-results.md
 ```

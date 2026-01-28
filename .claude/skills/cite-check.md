@@ -153,6 +153,6 @@ This skill operates in **STRICT** mode:
 ## Example
 
 ```
-/cite-check tehnika/konceptualno/en/00-arhitektura.md
-/cite-check patent/01-IP-FOUNDATION/01-01-invention-disclosure-modular.md
+/cite-check docs/architecture.md
+/cite-check docs/invention-disclosure.md
 ```

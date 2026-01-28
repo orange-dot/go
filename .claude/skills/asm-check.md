@@ -76,7 +76,7 @@ go test cmd/internal/testdir -run='Test/codegen'
 
 ## Output Format
 
-```
+````markdown
 ## Assembly Analysis: <function>
 
 ## Target: <GOOS/GOARCH>
@@ -113,7 +113,7 @@ func testFunc() {
     ...
 }
 ```
-```
+````
 
 ## Go Assembly Conventions
 

@@ -76,7 +76,7 @@ Structure documents following academic conventions. Essential for publication re
 
 ## Output Format
 
-```markdown
+````markdown
 # Document Structure Analysis
 
 ## Document: [filename]
@@ -224,7 +224,7 @@ Structure documents following academic conventions. Essential for publication re
 | Fig. 3 | Evaluation | Results plot |
 | Table 1 | System Design | Specifications |
 | Table 2 | Evaluation | Comparison |
-```
+````
 
 ## Flow Checklist
 
@@ -253,7 +253,7 @@ Structure documents following academic conventions. Essential for publication re
 ## Example
 
 ```
-/paper-structure tehnika/konceptualno/en/00-arhitektura.md
-/paper-structure --format=IEEE patent/01-IP-FOUNDATION/01-01-invention-disclosure-modular.md
-/paper-structure --format=patent disclosure.md
+/paper-structure docs/architecture.md
+/paper-structure --format=IEEE docs/paper-draft.md
+/paper-structure --format=patent docs/patent-draft.md
 ```
