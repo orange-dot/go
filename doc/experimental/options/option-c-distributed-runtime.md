@@ -7,6 +7,13 @@ runtime. Goroutines can migrate between nodes. The scheduler becomes distributed
 using Raft consensus. This is the most radical option—essentially creating a
 distributed operating system in Go.
 
+
+## Status (Research Sketch)
+
+- Unverified ideas only; all numbers are hypotheses.
+- Cross-option dependencies are intentional and noted below.
+- Any public API should live under golang.org/x/exp (not the standard library).
+
 ## Inspiration
 
 From ROJ paper:
@@ -23,12 +30,19 @@ From ROJ paper:
 > "Each module maintains connections to k=7 topological neighbors, inspired by
 > starling flock research."
 
+
+## Dependencies
+
+- Option A (heat tags) for node load signals.
+- Option D (version vectors) for causal ordering.
+- Optional: Option J for observability.
+
 ## Vision
 
 ```go
 package main
 
-import "runtime/distributed"
+import "golang.org/x/exp/distributed"
 
 func main() {
     // Join a cluster of Go runtimes
@@ -88,7 +102,7 @@ func main() {
 ### 1. Cluster Membership (Raft-based)
 
 ```go
-// runtime/distributed/cluster.go
+// golang.org/x/exp/distributed/cluster.go
 
 type Cluster struct {
     nodeID      NodeID
@@ -151,7 +165,7 @@ func (c *Cluster) runElection() {
 ### 2. Goroutine Migration
 
 ```go
-// runtime/distributed/migration.go
+// golang.org/x/exp/distributed/migration.go
 
 // SerializedG represents a goroutine that can move between nodes
 type SerializedG struct {
@@ -227,7 +241,7 @@ func (c *Cluster) receiveMigration(sg *SerializedG) {
 ### 3. Distributed Channels
 
 ```go
-// runtime/distributed/channel.go
+// golang.org/x/exp/distributed/channel.go
 
 // DistributedChan extends channels to work across nodes
 type DistributedChan struct {
@@ -286,7 +300,7 @@ func (dc *DistributedChan) Recv() interface{} {
 ### 4. Distributed GC
 
 ```go
-// runtime/distributed/gc.go
+// golang.org/x/exp/distributed/gc.go
 
 // Distributed GC requires consensus on GC phases
 type DistributedGC struct {
@@ -336,7 +350,7 @@ func (dgc *DistributedGC) startGCCycle() {
 From ROJ Section VI:
 
 ```go
-// runtime/distributed/partition.go
+// golang.org/x/exp/distributed/partition.go
 
 type PartitionState int
 
@@ -395,7 +409,7 @@ func (c *Cluster) reconcile(otherPartition *Cluster) {
 ### Simple Usage
 
 ```go
-import "runtime/distributed"
+import "golang.org/x/exp/distributed"
 
 func main() {
     // Auto-discover cluster via DNS or config
@@ -414,7 +428,7 @@ func main() {
 ### Explicit Control
 
 ```go
-import "runtime/distributed"
+import "golang.org/x/exp/distributed"
 
 func main() {
     cluster := distributed.New(distributed.Config{
@@ -455,7 +469,7 @@ func main() {
 | `runtime/proc.go` | Distributed scheduler hooks |
 | `runtime/chan.go` | Distributed channel support |
 | `runtime/mgc.go` | Distributed GC coordination |
-| `runtime/distributed/*.go` | New package (large) |
+| `golang.org/x/exp/distributed/*.go` | New package (large) |
 | `cmd/go/internal/work` | Build support for distributed |
 
 ## Challenges
@@ -484,7 +498,9 @@ func main() {
 - Network latency orders of magnitude slower than local
 - Must be very selective about what migrates
 
-## Expected Benefits
+## Expected Benefits (Hypotheses)
+
+All values below are hypotheses and **not verified**.
 
 | Scenario | Single Machine | Distributed |
 |----------|----------------|-------------|

@@ -7,6 +7,13 @@ coordination and scale-free correlation theory. Expose metrics that help
 developers understand how information and state propagate through their
 concurrent Go programs.
 
+
+## Status (Research Sketch)
+
+- Unverified ideas only; all numbers are hypotheses.
+- Cross-option dependencies are intentional and noted below.
+- Any public API should live under golang.org/x/exp (not the standard library).
+
 ## Inspiration
 
 From MAPF-HET paper Section V-C (Topological k=7 Coordination):
@@ -22,6 +29,12 @@ And from the theoretical analysis (Section VI-D):
 
 > "With k = 7 topological neighbor coordination, the correlation length ξ
 > scales linearly with system size N: ξ ∝ N"
+
+
+## Dependencies
+
+- Option H for goroutine dimension labels.
+- Optional: Option F/G/I for urgency signals.
 
 ## Current Go Observability
 
@@ -43,7 +56,7 @@ Go provides through `runtime/metrics`:
 ### Correlation Metrics Package
 
 ```go
-// runtime/metrics/correlation.go
+// golang.org/x/exp/correlation/metrics.go
 
 // CorrelationSnapshot captures the current state of goroutine interactions
 type CorrelationSnapshot struct {
@@ -84,7 +97,7 @@ type ChannelEdge struct {
 ### Tracking Infrastructure
 
 ```go
-// runtime/correlation_track.go
+// golang.org/x/exp/correlation/track.go
 
 // Correlation tracker maintains the interaction graph
 type correlationTracker struct {
@@ -135,7 +148,7 @@ func trackChannelSend(from, to *g, ch *hchan) {
 ### Metric Computation
 
 ```go
-// runtime/correlation_compute.go
+// golang.org/x/exp/correlation/compute.go
 
 // ComputeCorrelationMetrics calculates current metrics
 func ComputeCorrelationMetrics() CorrelationSnapshot {
@@ -275,7 +288,7 @@ func init() {
 ### Visualization Support
 
 ```go
-// runtime/correlation_export.go
+// golang.org/x/exp/correlation/export.go
 
 // ExportTopologyDOT exports the interaction graph in DOT format
 func ExportTopologyDOT(w io.Writer) error {
@@ -312,13 +325,13 @@ func ExportTopologyJSON(w io.Writer) error {
 ### Analysis Tools
 
 ```go
-// cmd/go/internal/correlate/correlate.go
+// golang.org/x/exp/correlation/cmd/correlate/correlate.go
 
-// go tool correlate - analyze goroutine interactions
+// correlate - analyze goroutine interactions
 //
 // Usage:
-//   go tool correlate -pprof=/path/to/correlation.prof
-//   go tool correlate -live localhost:6060
+//   correlate -pprof=/path/to/correlation.prof
+//   correlate -live localhost:6060
 //
 // Output:
 //   - Propagation analysis
@@ -336,7 +349,7 @@ func ExportTopologyJSON(w io.Writer) error {
 | `runtime/correlation_export.go` | New: visualization export |
 | `runtime/chan.go` | Add tracking hooks |
 | `runtime/metrics.go` | Register correlation metrics |
-| `cmd/go/internal/correlate/` | New: analysis tool |
+| `golang.org/x/exp/correlation/cmd/correlate/` | New: analysis tool |
 
 ## GOEXPERIMENT Flag
 
@@ -345,15 +358,15 @@ func ExportTopologyJSON(w io.Writer) error {
 var CorrelationMetrics = false  // GOEXPERIMENT=correlationmetrics
 ```
 
-## New API
+## New API (golang.org/x/exp/correlation)
 
-```go
-// api/next.txt
-pkg runtime/correlation, func Snapshot() CorrelationSnapshot
-pkg runtime/correlation, func ExportDOT(io.Writer) error
-pkg runtime/correlation, func ExportJSON(io.Writer) error
-pkg runtime/correlation, type CorrelationSnapshot struct
-pkg runtime/correlation, type ChannelTopology struct
+```
+package correlation
+func Snapshot() CorrelationSnapshot
+func ExportDOT(io.Writer) error
+func ExportJSON(io.Writer) error
+type CorrelationSnapshot struct
+type ChannelTopology struct
 ```
 
 ## Metrics Exposed
@@ -407,7 +420,9 @@ func BenchmarkCorrelationOverhead(b *testing.B) {
 }
 ```
 
-## Expected Benefits
+## Expected Benefits (Hypotheses)
+
+All values below are hypotheses and **not verified**.
 
 | Use Case | Current | With Correlation | Value |
 |----------|---------|------------------|-------|

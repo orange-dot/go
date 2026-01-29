@@ -6,6 +6,13 @@ Apply Conflict-Based Search (CBS) concepts from MAPF to Go's scheduler for
 principled resolution of goroutine conflicts over shared resources (locks,
 channels, I/O, memory).
 
+
+## Status (Research Sketch)
+
+- Unverified ideas only; all numbers are hypotheses.
+- Cross-option dependencies are intentional and noted below.
+- Any public API should live under golang.org/x/exp (not the standard library).
+
 ## Inspiration
 
 From MAPF-HET paper Section IV (Algorithm Design):
@@ -16,6 +23,12 @@ From MAPF-HET paper Section IV (Algorithm Design):
 > speedup over baseline."
 
 The key insight: **typed conflicts enable specialized resolution strategies**.
+
+
+## Dependencies
+
+- Optional: Option G for channel-level urgency signals.
+- Optional: Option H for dimension-aware conflict strategies.
 
 ## Current Go Scheduler Conflict Handling
 
@@ -302,7 +315,9 @@ func BenchmarkMutexContention(b *testing.B) {
 
 Compare with/without GOEXPERIMENT=cbsscheduler.
 
-## Expected Benefits
+## Expected Benefits (Hypotheses)
+
+All values below are hypotheses and **not verified**.
 
 | Scenario | Current | With CBS | Improvement |
 |----------|---------|----------|-------------|

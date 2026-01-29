@@ -6,6 +6,13 @@ Add fault isolation and automatic recovery to goroutines, inspired by JEZGRO's
 reincarnation server and Erlang/OTP's supervisor pattern. Panicking goroutines
 can be automatically restarted without crashing the entire program.
 
+
+## Status (Research Sketch)
+
+- Unverified ideas only; all numbers are hypotheses.
+- Cross-option dependencies are intentional and noted below.
+- Any public API should live under golang.org/x/exp (not the standard library).
+
 ## Inspiration
 
 From ROJ paper Section III-C (JEZGRO Microkernel):
@@ -18,6 +25,12 @@ And Section V-D (Recovery):
 
 > "Quarantined modules can rejoin after: Fresh firmware upload and self-test,
 > 24-hour probationary period with reduced trust"
+
+
+## Dependencies
+
+- None (standalone).
+- Optional: Option C for distributed supervision.
 
 ## Current Go Behavior
 
@@ -38,7 +51,7 @@ Go's current panic/recover model:
 
 ### Level 1: Supervision Groups (Library Level)
 
-New `runtime/supervised` or `x/sync/supervised` package:
+New `golang.org/x/exp/supervised` package:
 
 ```go
 package supervised
@@ -241,7 +254,7 @@ type IsolationDomain struct {
 ### Simple API (covers 90% of use cases)
 
 ```go
-import "runtime/supervised"
+import "golang.org/x/exp/supervised"
 
 func main() {
     sup := supervised.New(
@@ -303,7 +316,7 @@ for i := 0; i < numWorkers; i++ {
 | `runtime/panic.go` | Check for supervision before crashing |
 | `runtime/supervisor.go` | New file: supervisor implementation |
 | `runtime/proc.go` | Supervisor lifecycle tied to P |
-| `runtime/supervised/*.go` | New package: user-facing API |
+| `golang.org/x/exp/supervised` | User-facing API (experimental) |
 
 ## Backward Compatibility
 
@@ -350,7 +363,9 @@ func TestSupervisorRestart(t *testing.T) {
 - Database connection pool recovery
 - Message queue consumer recovery
 
-## Expected Benefits
+## Expected Benefits (Hypotheses)
+
+All values below are hypotheses and **not verified**.
 
 | Scenario | Current | With Supervision |
 |----------|---------|------------------|

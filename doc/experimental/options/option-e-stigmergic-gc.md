@@ -7,6 +7,13 @@ garbage collector. Instead of explicit stop-the-world coordination, each P
 independently decides when to do GC work based on local "memory pressure tags"
 that propagate through the system, creating emergent GC behavior.
 
+
+## Status (Research Sketch)
+
+- Unverified ideas only; all numbers are hypotheses.
+- Cross-option dependencies are intentional and noted below.
+- Any public API should live under golang.org/x/exp (not the standard library).
+
 ## Inspiration
 
 From ROJ paper Section VII (Emergent Load Balancing):
@@ -18,6 +25,11 @@ From ROJ paper Section VII (Emergent Load Balancing):
 The paper shows 88% reduction in temperature variance through emergent behavior.
 Applied to GC, this could mean smoother memory management without coordinated
 pauses.
+
+
+## Dependencies
+
+- Conceptually aligned with Option A (stigmergic load signals).
 
 ## Current Go GC
 
@@ -356,7 +368,9 @@ GODEBUG=gctrace=1 GOEXPERIMENT=stigmergygc go run benchmark.go
 - Variable allocation patterns
 - Memory pressure scenarios
 
-## Expected Benefits
+## Expected Benefits (Hypotheses)
+
+All values below are hypotheses and **not verified**.
 
 | Metric | Current GC | Stigmergic GC | Improvement |
 |--------|------------|---------------|-------------|

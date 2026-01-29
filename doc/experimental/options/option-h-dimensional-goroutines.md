@@ -7,6 +7,13 @@ specialized scheduling strategies, inspired by MD-MAPF's dimensional conflict
 taxonomy where agents operating in different spaces (1D rail, 2D floor, 3D air)
 have fundamentally different scheduling needs.
 
+
+## Status (Research Sketch)
+
+- Unverified ideas only; all numbers are hypotheses.
+- Cross-option dependencies are intentional and noted below.
+- Any public API should live under golang.org/x/exp (not the standard library).
+
 ## Inspiration
 
 From MAPF-HET paper Section III-A (MD-MAPF):
@@ -17,6 +24,12 @@ From MAPF-HET paper Section III-A (MD-MAPF):
 
 The insight: **agents with different operational characteristics benefit from
 specialized handling**, not one-size-fits-all scheduling.
+
+
+## Dependencies
+
+- None (standalone).
+- Used by Option J for correlation visualization.
 
 ## Current Go Scheduler
 
@@ -225,7 +238,7 @@ func resolveByDimension(g1, g2 *g) conflictStrategy {
 ### User Hints API
 
 ```go
-// runtime/dim_hint.go (exported via runtime package)
+// golang.org/x/exp/sched (experimental user hint API)
 
 // Hint allows users to declare goroutine characteristics
 type GoroutineHint uint8
@@ -247,7 +260,8 @@ func SetGoroutineHint(hint GoroutineHint) {
 }
 
 // Usage:
-// runtime.SetGoroutineHint(runtime.HintNetwork)
+// import "golang.org/x/exp/sched"
+// sched.SetGoroutineHint(sched.HintNetwork)
 // go handleConnection(conn)
 ```
 
@@ -272,18 +286,20 @@ func SetGoroutineHint(hint GoroutineHint) {
 var DimensionalScheduler = false  // GOEXPERIMENT=dimscheduler
 ```
 
-## New API
+## New API (golang.org/x/exp/sched)
 
-```go
-// api/next.txt
-pkg runtime, func SetGoroutineHint(GoroutineHint)
-pkg runtime, type GoroutineHint uint8
-pkg runtime, const HintCompute GoroutineHint
-pkg runtime, const HintIO GoroutineHint
-pkg runtime, const HintNetwork GoroutineHint
-pkg runtime, const HintSync GoroutineHint
-pkg runtime, const HintLatencySensitive GoroutineHint
-pkg runtime, const HintBatchable GoroutineHint
+```
+package sched
+func SetGoroutineHint(GoroutineHint)
+type GoroutineHint uint8
+const (
+    HintCompute GoroutineHint
+    HintIO GoroutineHint
+    HintNetwork GoroutineHint
+    HintSync GoroutineHint
+    HintLatencySensitive GoroutineHint
+    HintBatchable GoroutineHint
+)
 ```
 
 ## Metrics
@@ -332,7 +348,9 @@ func BenchmarkMixedWorkload(b *testing.B) {
 }
 ```
 
-## Expected Benefits
+## Expected Benefits (Hypotheses)
+
+All values below are hypotheses and **not verified**.
 
 | Workload | Current | With Dimensional | Improvement |
 |----------|---------|------------------|-------------|

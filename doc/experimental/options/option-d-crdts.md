@@ -7,6 +7,13 @@ runtime. CRDTs are data structures that can be modified concurrently without
 coordination and always converge to a consistent state. This eliminates many
 race conditions by construction.
 
+
+## Status (Research Sketch)
+
+- Unverified ideas only; all numbers are hypotheses.
+- Cross-option dependencies are intentional and noted below.
+- Any public API should live under golang.org/x/exp (not the standard library).
+
 ## Inspiration
 
 From ROJ paper Section IV-C (Event Gossip with Version Vectors):
@@ -18,6 +25,12 @@ Version vectors are a form of CRDT (specifically, a vector clock for causal
 ordering). The paper demonstrates that these primitives work efficiently on
 resource-constrained systems.
 
+
+## Dependencies
+
+- None (standalone).
+- Optional: Option C can use CRDTs for replicated state.
+
 ## What Are CRDTs?
 
 CRDTs are data structures with a mathematically proven property: concurrent
@@ -28,7 +41,7 @@ Two types:
 1. **State-based (CvRDT)**: Merge complete states
 2. **Operation-based (CmRDT)**: Apply operations (requires causal delivery)
 
-## Proposed Package: `sync/crdt`
+## Proposed Package: `golang.org/x/exp/crdt`
 
 ```go
 package crdt
@@ -79,7 +92,7 @@ type VersionVector struct { ... }
 ### GCounter (Grow-Only Counter)
 
 ```go
-// sync/crdt/gcounter.go
+// golang.org/x/exp/crdt/gcounter.go
 
 // GCounter is a conflict-free grow-only counter.
 // It can be incremented from multiple goroutines and nodes
@@ -163,7 +176,7 @@ func (gc *GCounter) State() map[uint64]uint64 {
 ### ORSet (Observed-Remove Set)
 
 ```go
-// sync/crdt/orset.go
+// golang.org/x/exp/crdt/orset.go
 
 // ORSet is an add-wins observed-remove set.
 // Elements can be added and removed concurrently.
@@ -260,7 +273,7 @@ func (s *ORSet[T]) Merge(other *ORSet[T]) {
 ### VersionVector
 
 ```go
-// sync/crdt/versionvector.go
+// golang.org/x/exp/crdt/versionvector.go
 
 // VersionVector tracks causality across concurrent operations.
 // Used for determining happens-before relationships.
@@ -371,7 +384,7 @@ func (vv *VersionVector) Compare(other *VersionVector) CausalOrder {
 ### Lock-Free Distributed Counter
 
 ```go
-import "sync/crdt"
+import "golang.org/x/exp/crdt"
 
 // Each worker has its own node ID
 func worker(id uint64, counter *crdt.GCounter, done chan bool) {
@@ -405,7 +418,7 @@ func main() {
 ### Collaborative Set
 
 ```go
-import "sync/crdt"
+import "golang.org/x/exp/crdt"
 
 type SharedState struct {
     ActiveUsers *crdt.ORSet[string]
@@ -427,7 +440,7 @@ func (s *SharedState) UserLeft(userID string) {
 ### Causal Message Ordering
 
 ```go
-import "sync/crdt"
+import "golang.org/x/exp/crdt"
 
 type Message struct {
     Content string
@@ -480,28 +493,31 @@ func (cb *CausalBroadcast) tryDeliver() {
 
 | File | Contents |
 |------|----------|
-| `src/sync/crdt/doc.go` | Package documentation |
-| `src/sync/crdt/gcounter.go` | Grow-only counter |
-| `src/sync/crdt/pncounter.go` | Positive-negative counter |
-| `src/sync/crdt/gset.go` | Grow-only set |
-| `src/sync/crdt/twophaseset.go` | Two-phase set |
-| `src/sync/crdt/orset.go` | Observed-remove set |
-| `src/sync/crdt/lwwregister.go` | Last-writer-wins register |
-| `src/sync/crdt/mvregister.go` | Multi-value register |
-| `src/sync/crdt/versionvector.go` | Version vector |
-| `src/sync/crdt/*_test.go` | Tests for each type |
+| `x/exp/crdt/doc.go` | Package documentation |
+| `x/exp/crdt/gcounter.go` | Grow-only counter |
+| `x/exp/crdt/pncounter.go` | Positive-negative counter |
+| `x/exp/crdt/gset.go` | Grow-only set |
+| `x/exp/crdt/twophaseset.go` | Two-phase set |
+| `x/exp/crdt/orset.go` | Observed-remove set |
+| `x/exp/crdt/lwwregister.go` | Last-writer-wins register |
+| `x/exp/crdt/mvregister.go` | Multi-value register |
+| `x/exp/crdt/versionvector.go` | Version vector |
+| `x/exp/crdt/*_test.go` | Tests for each type |
 
 ## API Compatibility
 
-New package, no changes to existing `api/go1.*.txt`.
+- No stdlib API changes; experimental API lives in `golang.org/x/exp/crdt`.
+- No updates to `api/go1.*.txt`.
 
-Add to `api/next.txt`:
+### Experimental API Surface (x/exp)
+
 ```
-pkg sync/crdt, func NewGCounter(uint64) *GCounter
-pkg sync/crdt, method (*GCounter) Increment()
-pkg sync/crdt, method (*GCounter) IncrementBy(uint64)
-pkg sync/crdt, method (*GCounter) Value() uint64
-pkg sync/crdt, method (*GCounter) Merge(*GCounter)
+package crdt
+func NewGCounter(uint64) *GCounter
+func (*GCounter) Increment()
+func (*GCounter) IncrementBy(uint64)
+func (*GCounter) Value() uint64
+func (*GCounter) Merge(*GCounter)
 ...
 ```
 
@@ -553,7 +569,9 @@ func BenchmarkGCounterIncrement(b *testing.B) {
 }
 ```
 
-## Expected Benefits
+## Expected Benefits (Hypotheses)
+
+All values below are hypotheses and **not verified**.
 
 | Scenario | Without CRDTs | With CRDTs |
 |----------|---------------|------------|

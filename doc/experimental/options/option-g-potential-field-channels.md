@@ -7,6 +7,13 @@ Goroutines waiting on channels create "urgency potentials" that guide the
 scheduler to serve high-urgency operations first, achieving emergent fairness
 without explicit priority levels.
 
+
+## Status (Research Sketch)
+
+- Unverified ideas only; all numbers are hypotheses.
+- Cross-option dependencies are intentional and noted below.
+- Any public API should live under golang.org/x/exp (not the standard library).
+
 ## Inspiration
 
 From MAPF-HET paper Section V-B (Potential Field Scheduler):
@@ -19,6 +26,12 @@ From ROJ paper Section VII (Emergent Load Balancing):
 > "Cooler modules (lower tags) increase their power share; hotter modules
 > decrease. This creates emergent thermal migration without centralized
 > coordination."
+
+
+## Dependencies
+
+- Optional: Option F for shared urgency definitions.
+- Optional: Option I if cooperative scheduling is enabled.
 
 ## Current Go Channel Scheduling
 
@@ -355,7 +368,9 @@ func BenchmarkChannelFairness(b *testing.B) {
 }
 ```
 
-## Expected Benefits
+## Expected Benefits (Hypotheses)
+
+All values below are hypotheses and **not verified**.
 
 | Scenario | Current (FIFO) | With Potential | Improvement |
 |----------|----------------|----------------|-------------|

@@ -7,6 +7,13 @@ balancing. Each P maintains "heat tags" representing utilization metrics.
 Goroutines flow toward cooler Ps through emergent behavior without explicit
 centralized coordination.
 
+
+## Status (Research Sketch)
+
+- Unverified ideas only; all numbers are hypotheses.
+- Cross-option dependencies are intentional and noted below.
+- Any public API should live under golang.org/x/exp (not the standard library).
+
 ## Inspiration
 
 From ROJ paper Section VII (Emergent Load Balancing):
@@ -18,6 +25,13 @@ From ROJ paper Section VII (Emergent Load Balancing):
 
 The paper demonstrates 88% reduction in temperature variance vs 14% for
 traditional approaches.
+
+
+## Dependencies
+
+- None (standalone).
+- Optional: Option J for observability/metrics.
+- Optional: Option C can consume heat tags for cluster scheduling.
 
 ## Current Go Scheduler
 
@@ -216,7 +230,9 @@ numactl --cpunodebind=0-1 go test -bench=BenchmarkSchedNUMA
 - Intel Xeon Scalable (multi-socket)
 - Apple M1/M2 (performance/efficiency cores)
 
-## Expected Benefits
+## Expected Benefits (Hypotheses)
+
+All values below are hypotheses and **not verified**.
 
 | Metric | Current | Expected | Improvement |
 |--------|---------|----------|-------------|

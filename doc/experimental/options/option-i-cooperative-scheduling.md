@@ -7,6 +7,13 @@ planning-execution separation. In this mode, goroutines yield voluntarily at
 safe points rather than being preempted, enabling predictable execution and
 easier reasoning about concurrent behavior.
 
+
+## Status (Research Sketch)
+
+- Unverified ideas only; all numbers are hypotheses.
+- Cross-option dependencies are intentional and noted below.
+- Any public API should live under golang.org/x/exp (not the standard library).
+
 ## Inspiration
 
 From MAPF-HET paper Section V-F (Planning-Execution Bridge):
@@ -21,6 +28,12 @@ Also from ROJ paper's JEZGRO microkernel:
 
 > "Hybrid privilege: Hard real-time LLC control runs in kernel space; other
 > services run isolated."
+
+
+## Dependencies
+
+- Optional: Option G for potential-field urgency signals.
+- Optional: Option F/H for urgency definitions and conflict strategies.
 
 ## Current Go Scheduling Model
 
@@ -256,11 +269,9 @@ func (gp *g) shouldYieldCooperative() bool {
 }
 ```
 
-## Runtime API
+## Experimental API (golang.org/x/exp/sched)
 
-```go
-// Exported API for cooperative scheduling
-
+```
 // SetSchedulingMode sets the global scheduling mode
 // Must be called before any goroutines start significant work
 func SetSchedulingMode(mode SchedulingMode)
@@ -303,21 +314,23 @@ func SafePoint()
 var CooperativeScheduler = false  // GOEXPERIMENT=cooperative
 ```
 
-## New API
+## New API (golang.org/x/exp/sched)
 
-```go
-// api/next.txt
-pkg runtime, func SetSchedulingMode(SchedulingMode)
-pkg runtime, func Yield()
-pkg runtime, func YieldIfNeeded()
-pkg runtime, func EnterCooperativeRegion() CooperativeRegion
-pkg runtime, func SafePoint()
-pkg runtime, type SchedulingMode int
-pkg runtime, const ModePreemptive SchedulingMode
-pkg runtime, const ModeCooperative SchedulingMode
-pkg runtime, const ModeHybrid SchedulingMode
-pkg runtime, type CooperativeRegion struct
-pkg runtime, method (CooperativeRegion) Exit()
+```
+package sched
+func SetSchedulingMode(SchedulingMode)
+func Yield()
+func YieldIfNeeded()
+func EnterCooperativeRegion() CooperativeRegion
+func SafePoint()
+type SchedulingMode int
+const (
+    ModePreemptive SchedulingMode
+    ModeCooperative SchedulingMode
+    ModeHybrid SchedulingMode
+)
+type CooperativeRegion struct
+func (CooperativeRegion) Exit()
 ```
 
 ## Metrics
@@ -336,15 +349,15 @@ pkg runtime, method (CooperativeRegion) Exit()
 ### Unit Tests
 ```go
 func TestCooperativeYield(t *testing.T) {
-    runtime.SetSchedulingMode(runtime.ModeCooperative)
-    defer runtime.SetSchedulingMode(runtime.ModePreemptive)
+    sched.SetSchedulingMode(sched.ModeCooperative)
+    defer sched.SetSchedulingMode(sched.ModePreemptive)
 
     order := make([]int, 0, 2)
     done := make(chan bool)
 
     go func() {
         order = append(order, 1)
-        runtime.Yield()
+        sched.Yield()
         order = append(order, 3)
         done <- true
     }()
@@ -366,20 +379,20 @@ func TestCooperativeYield(t *testing.T) {
 ```go
 func BenchmarkCooperativeVsPreemptive(b *testing.B) {
     modes := []runtime.SchedulingMode{
-        runtime.ModePreemptive,
-        runtime.ModeCooperative,
-        runtime.ModeHybrid,
+        sched.ModePreemptive,
+        sched.ModeCooperative,
+        sched.ModeHybrid,
     }
 
     for _, mode := range modes {
         b.Run(mode.String(), func(b *testing.B) {
-            runtime.SetSchedulingMode(mode)
-            defer runtime.SetSchedulingMode(runtime.ModePreemptive)
+            sched.SetSchedulingMode(mode)
+            defer sched.SetSchedulingMode(sched.ModePreemptive)
 
             b.RunParallel(func(pb *testing.PB) {
                 for pb.Next() {
                     // Workload
-                    runtime.YieldIfNeeded()
+                    sched.YieldIfNeeded()
                 }
             })
         })
@@ -387,7 +400,9 @@ func BenchmarkCooperativeVsPreemptive(b *testing.B) {
 }
 ```
 
-## Expected Benefits
+## Expected Benefits (Hypotheses)
+
+All values below are hypotheses and **not verified**.
 
 | Scenario | Preemptive | Cooperative | Improvement |
 |----------|------------|-------------|-------------|
