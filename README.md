@@ -38,5 +38,12 @@ Note that the Go project uses the issue tracker for bug reports and
 proposals only. See https://go.dev/wiki/Questions for a list of
 places to ask questions about the Go language.
 
+### Experimental Research Notes
+
+This repository also includes **experimental research sketches** and
+unverified ideas under `doc/experimental/options`. These documents are
+not part of the Go project’s official roadmap, and their contents are
+hypotheses for exploration rather than committed plans.
+
 [rf]: https://reneefrench.blogspot.com/
 [cc4-by]: https://creativecommons.org/licenses/by/4.0/
